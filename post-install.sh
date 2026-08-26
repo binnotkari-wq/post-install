@@ -16,7 +16,24 @@ curl -sSL https://raw.githubusercontent.com/binnotkari-wq/scripts/main/git-sync.
 echo 3. "Installation de brew"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-echo 4. Installation des flatpaks
+echo "4. Mise en place des alias"
+echo "alias bh='ls -la'" >> ~/.bashrc
+
+echo "alias bh='$HOME/Git/scripts/bash-history-export.sh'" >> ~/.bashrc
+echo "alias bh='$HOME/Git/scripts/git-sync.sh'" >> ~/.bashrc
+echo "alias bh='$HOME/Git/scripts/bash-history-export.sh'" >> ~/.bashrc
+
+# alias gemma='llama-cli --model "/cargo/local_cache/LLM/gemma-3-4b-it-Q8_0.gguf" --conversation --system-prompt "Tu es un assistant compréhensif pour la vie quotidienne : ménage, jardin, travaux, mécanique." --no-mmap --ctx-size 4096'
+# alias qwen='llama-cli --model "/cargo/local_cache/LLM/Qwen2.5-Coder-3B-Instruct-abliterated-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant concis en ingénierie des systèmes linux, scripting, développement." --no-mmap --ctx-size 4096'
+# alias llama='llama-cli --model "/cargo/local_cache/LLM/Llama-3.2-3B-Instruct-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant personnel pour aider à explorer de nouveaux concepts." --no-mmap --ctx-size 4096'
+
+
+alias bkp='$HOME/Git/scripts/backup.sh'
+
+alias gs='$HOME/Git/scripts/git-sync.sh'
+
+
+echo 5. Installation des flatpaks
 # Nota bene : on banni le mode --user pour les flatpaks. Pour une question de sécurité : installation "systeme" pour que personne (ni un utilisateur, ni un logiciel malveillant) ne puisse altérer les outils de base. En installation mode --user, un logiciel malveillant n'a besoin d'aucun privilège particulier pour alterer le contenu d'un flatpak. De plus, l'installation en mode --user n'isole pas plus les flatpaks. En mode système, il sont dans /var/lib, et donc deja en dehors des fichiers de l'OS (aucune pollution).
 
 executer_logique() {
@@ -37,8 +54,9 @@ executer_logique() {
   flatpak uninstall --unused
 
   echo "Application des permissions spécifiques"
-  sudo flatpak override --user --env=MANGOHUD=1 com.valvesoftware.Steam
-  # sudo flatpak override com.usebottles.bottles --user --filesystem=xdg-data/applications
+  flatpak override --user --env=MANGOHUD=1 com.valvesoftware.Steam
+  sudo flatpak override --env=MANGOHUD=1 com.valvesoftware.Steam
+  # flatpak override com.usebottles.bottles --user --filesystem=xdg-data/applications
   sudo flatpak override  --talk-name=org.freedesktop.Flatpak --filesystem=home io.github.qwersyk.Newelle
   echo "✅ Flatpaks installés avec succès (system-wide)."
 }
@@ -97,7 +115,7 @@ installer_applications_communes() {
     "de.haeckerfelix.Fragments"
     "com.ranfdev.DistroShelf"
     "org.gimp.GIMP"
-    "garden.jamie.Morphosis"
+    "dev.deimoshall.Metamorphosis"
     "org.scratchmark.Scratchmark"
     "fr.handbrake.ghb"
     "com.github.tchx84.Flatseal"
