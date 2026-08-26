@@ -4,19 +4,21 @@
 # Kit de post installation, mise en place environnement. Aucune donnée personnelle. #
 #####################################################################################
 
-set -ouex pipefail
+set -oue pipefail
 
 echo "1. Mise en place des préférences de firefox"
 sudo mkdir -p /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies
 sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/config/firefox/policies.json -o /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json
+echo "✅ Préférences Firefox mises en place avec succès."
 
 echo "2. Mise en place du repo Github"
 curl -sSL https://raw.githubusercontent.com/binnotkari-wq/scripts/main/git-sync.sh| bash
+echo "✅ Repo Github mis en place avec succès."
 
-echo 3. "Installation de brew"
-set +x
+echo 3. "Installation de Brew"
+
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-set -x
+echo "✅ Brew installé avec succès."
 
 echo "4. Mise en place des alias"
 echo "alias bh='$HOME/Git/scripts/bash-history-export.sh'" >> ~/.bashrc
@@ -24,11 +26,7 @@ echo "alias gs='$HOME/Git/scripts/git-sync.sh'" >> ~/.bashrc
 # alias gemma='llama-cli --model "/cargo/local_cache/LLM/gemma-3-4b-it-Q8_0.gguf" --conversation --system-prompt "Tu es un assistant compréhensif pour la vie quotidienne : ménage, jardin, travaux, mécanique." --no-mmap --ctx-size 4096'
 # alias qwen='llama-cli --model "/cargo/local_cache/LLM/Qwen2.5-Coder-3B-Instruct-abliterated-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant concis en ingénierie des systèmes linux, scripting, développement." --no-mmap --ctx-size 4096'
 # alias llama='llama-cli --model "/cargo/local_cache/LLM/Llama-3.2-3B-Instruct-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant personnel pour aider à explorer de nouveaux concepts." --no-mmap --ctx-size 4096'
-
-
-alias bkp='$HOME/Git/scripts/backup.sh'
-
-alias gs='$HOME/Git/scripts/git-sync.sh'
+echo "✅ Alias mis en place avec succès."
 
 
 echo 5. Installation des flatpaks
