@@ -133,6 +133,7 @@ installer_applications_communes() {
     "page.tesk.Refine"
     "org.nickvision.tagger"
     "org.tenacityaudio.Tenacity"
+    "com.github.fabiocolacio.marker"
 
     # Gaming
     "com.heroicgameslauncher.hgl"
