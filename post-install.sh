@@ -29,8 +29,6 @@ executer_logique() {
   if grep -qE "silverblue|kinoite|bazzite" /etc/os-release 2>/dev/null; then
     installer_applications_exclusives_atomic
   fi  
-
-  installer_applications_gaming
   if ! grep -qE "bazzite" /etc/os-release 2>/dev/null; then
     installer_applications_gaming_non_bazzite
   fi
