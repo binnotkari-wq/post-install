@@ -38,18 +38,20 @@ executer_logique() {
   echo "Nettoyage des résidus éventuels"
   flatpak uninstall --unused
 
-  echo "Application des permissions spécifiques flatpaks gaming"
-  flatpak override --user --env=MANGOHUD=1 com.valvesoftware.Steam
-  flatpak override com.usebottles.bottles --user --filesystem=xdg-data/applications
+  echo "Application des permissions spécifiques"
+  sudo flatpak override --user --env=MANGOHUD=1 com.valvesoftware.Steam
+  # sudo flatpak override com.usebottles.bottles --user --filesystem=xdg-data/applications
+  sudo flatpak override  --talk-name=org.freedesktop.Flatpak --filesystem=home io.github.qwersyk.Newelle
   echo "✅ Flatpaks installés avec succès (system-wide)."
 }
 
 installer_applications_gaming_non_bazzite() {
   # Application déjà présentes sur Bazzite en natif
   APPS_GAMING_NON_BAZZITE=(
-    "net.lutris.Lutris"
+    # "net.lutris.Lutris"
     "com.valvesoftware.Steam"
     "com.valvesoftware.Steam.CompatibilityTool.Proton-GE"
+    "com.valvesoftware.Steam.CompatibilityTool.Boxtron"
     "org.freedesktop.Platform.VulkanLayer.gamescope"
     "org.freedesktop.Platform.VulkanLayer.MangoHud"
   )
@@ -109,10 +111,11 @@ installer_applications_communes() {
     "it.mijorus.smile"
     "page.tesk.Refine"
     "org.nickvision.tagger"
+    "org.tenacityaudio.Tenacity"
 
     # Gaming
     "com.heroicgameslauncher.hgl"
-    "com.usebottles.bottles"
+    # "com.usebottles.bottles"
   )
   flatpak install --system -y flathub "${APPS_COMMUNES[@]}"
 }
@@ -122,7 +125,7 @@ installer_applications_exclusives_atomic() {
     # Application à installer, ou déjà installée, en natif sur Nixos
     "io.github.ilya_zlobintsev.LACT"
     "io.github.qwersyk.Newelle"
-    "org.gnome.Extensions"
+    # "org.gnome.Extensions"
   )
   flatpak install --system -y flathub "${APPS_EXCLUSIVES_ATOMIC[@]}"
 }
