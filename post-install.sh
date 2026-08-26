@@ -10,15 +10,23 @@ echo "1. Mise en place des préférences de firefox"
 sudo mkdir -p /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies
 sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/config/firefox/policies.json -o /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json
 echo "✅ Préférences Firefox mises en place avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
 
 echo "2. Mise en place du repo Github"
 curl -sSL https://raw.githubusercontent.com/binnotkari-wq/scripts/main/git-sync.sh| bash
 echo "✅ Repo Github mis en place avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
 
 echo 3. "Installation de Brew"
-
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 echo "✅ Brew installé avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
 
 echo "4. Mise en place des alias"
 echo "alias bh='$HOME/Git/scripts/bash-history-export.sh'" >> ~/.bashrc
@@ -27,13 +35,14 @@ echo "alias gs='$HOME/Git/scripts/git-sync.sh'" >> ~/.bashrc
 # alias qwen='llama-cli --model "/cargo/local_cache/LLM/Qwen2.5-Coder-3B-Instruct-abliterated-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant concis en ingénierie des systèmes linux, scripting, développement." --no-mmap --ctx-size 4096'
 # alias llama='llama-cli --model "/cargo/local_cache/LLM/Llama-3.2-3B-Instruct-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant personnel pour aider à explorer de nouveaux concepts." --no-mmap --ctx-size 4096'
 echo "✅ Alias mis en place avec succès."
-
+echo ""
+echo "#####################################################################################"
+echo ""
 
 echo 5. Installation des flatpaks
 # Nota bene : on banni le mode --user pour les flatpaks. Pour une question de sécurité : installation "systeme" pour que personne (ni un utilisateur, ni un logiciel malveillant) ne puisse altérer les outils de base. En installation mode --user, un logiciel malveillant n'a besoin d'aucun privilège particulier pour alterer le contenu d'un flatpak. De plus, l'installation en mode --user n'isole pas plus les flatpaks. En mode système, il sont dans /var/lib, et donc deja en dehors des fichiers de l'OS (aucune pollution).
 
 executer_logique() {
-  echo "--- 📦 Installation des applications Flatpak (system-wide) ---"
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
   flatpak remote-modify --no-filter --enable flathub
   flatpak update -y
@@ -143,3 +152,6 @@ installer_applications_exclusives_atomic() {
 }
 
 executer_logique "$@"
+echo ""
+echo "#####################################################################################"
+echo ""
