@@ -1,0 +1,43 @@
+{
+  "policies": {
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "DontCheckDefaultBrowser": true,
+    "RequestedLocales": ["fr"],
+    "Preferences": {
+      "browser.translations.automaticallyPopup": { "Value": false, "Status": "default" },
+      "browser.startup.homepage": { "Value": "https://duckduckgo.com/", "Status": "default" },
+      "intl.locale.requested": { "Value": "fr", "Status": "default" },
+      "intl.accept_languages": { "Value": "fr-fr,fr", "Status": "default" },
+      "spellchecker.dictionary": { "Value": "fr-FR", "Status": "default" },
+      "layout.spellcheckDefault": { "Value": 2, "Status": "default" }
+    },
+    "Extensions": {
+      "Install": [
+        "https://addons.mozilla.org/firefox/downloads/file/4822564/empiric_markdown_viewer-0.4.0.xpi",
+        "https://addons.mozilla.org/firefox/downloads/file/4617846/kiwix_offline-4.3.0.xpi",
+        "https://addons.mozilla.org/firefox/downloads/file/4591252/gnome_shell_integration-12.1.xpi",
+        "https://addons.mozilla.org/firefox/downloads/file/4452159/claude_to_markdown-2025.3.11.xpi"
+      ]
+    },
+    "EnableTrackingProtection": {
+      "Value": true,
+      "Locked": true,
+      "Cryptomining": true,
+      "Fingerprinting": true
+    },
+    "SearchEngines": {
+      "Remove": ["eBay", "Google", "Bing", "Ecosia", "Wikipedia", "Perplexity"],
+      "Add": [
+        {
+          "Name": "DuckDuckGo",
+          "URLTemplate": "https://duckduckgo.com/?q={searchTerms}&ia=web&assist=false",
+          "IconURL": "https://duckduckgo.com/favicon.ico",
+          "Alias": "ddg",
+          "Description": "Duckduckgo sans IA"
+        }
+      ],
+      "Default": "DuckDuckGo"
+    }
+  }
+}
