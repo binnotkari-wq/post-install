@@ -1,0 +1,159 @@
+
+# Pour info, méthode utilisée le 27/08/2026 pour créer un nouveau sousvolume en topelevl 5 sur un système OSTREE en cours
+BTRFS_DEVICE="$(findmnt -no SOURCE -T /var | sed 's/\[.*//')"
+echo "$BTRFS_DEVICE"
+sudo mkdir -p /mnt/btrfs-top
+sudo mount -o subvolid=5 "$BTRFS_DEVICE" /mnt/btrfs-top
+sudo btrfs subvolume create /mnt/btrfs-top/data
+sudo umount /mnt/btrfs-top
+sudo mkdir -p /var/data
+
+
+sudo nano /etc/fstab
+
+et ajouter :
+UUID=e3fa91c1-4527-4d8a-b811-9eac10276287 /var/data btrfs subvol=data,compress=zstd:3,x-systemd.device-timeout=0 0 0
+
+puis
+systemctl daemon-reload
+sudo mount -a
+sudo chown -R 1000:1000 /var/data
+
+
+
+
+# On créé les dossiers de stockage dans data :
+sudo mkdir -p /var/data/var-lib-flatpak
+sudo mkdir -p /var/data/var-lib-containers
+sudo chown -R root:root /var/data/var-lib-flatpak
+sudo chown -R root:root /var/data/var-lib-containers
+mkdir -p /var/data/user-.local/bin
+mkdir -p /var/data/user-.local-share-containers
+
+
+# On y copie les données éventuelles
+sudo rsync -aHAX --numeric-ids /var/lib/flatpak/ /var/data/var-lib-flatpak
+sudo rsync -aHAX --numeric-ids /var/lib/containers/ /var/data/var-lib-containers
+rsync -aHAX ~/.local/bin/ /var/data/user-.local/bin
+rsync -aHAX ~/.local/share/containers/ /var/data/user-.local-share-containers
+
+
+
+sudo chown -R 1000:1000 /var/data/user-.local/bin
+sudo chown -R 1000:1000 /var/data/user-.local-share-containers
+sudo chown -R root:root /var/data/var-lib-flatpak
+sudo chown -R root:root /var/data/var-lib-containers
+
+
+4. Remplacer les dossiers par des liens symboliques
+
+Conserve d’abord les anciens dossiers comme sauvegarde :
+bash
+
+sudo mv /var/lib/flatpak /var/lib/flatpak.old
+sudo mv /var/lib/containers /var/lib/containers.old
+
+Puis crée les liens :
+bash
+
+sudo ln -s /var/data/var-lib-flatpak /var/lib/flatpak
+sudo ln -s /var/data/var-lib-containers /var/lib/containers
+
+Pour ton compte utilisateur :
+bash
+
+mv ~/.local/bin ~/.local/bin.old
+mv ~/.local/share/containers ~/.local/share/containers.old
+
+Puis :
+bash
+
+ln -s /var/data/user-.local/bin ~/.local/bin
+ln -s /var/data/user-.local-share-containers ~/.local/share/containers
+
+Vérifie les liens :
+bash
+
+ls -ld \
+  /var/lib/flatpak \
+  /var/lib/containers/storage \
+  ~/.local/bin \
+  ~/.local/share/containers/storage
+
+Ils doivent afficher -> /var/data/....
+5. Restaurer les contextes SELinux
+
+Fedora utilise SELinux. Après le déplacement, applique les contextes adaptés :
+bash
+
+sudo restorecon -RFv /var/data/var-lib-flatpak
+sudo restorecon -RFv /var/data/var-lib-containers
+restorecon -RFv /var/data/user-.local/bin
+restorecon -RFv /var/data/user-.local-share-containers
+
+
+
+Le dernier chemin ne doit être exécuté qu’en tant que ton utilisateur, sans sudo.
+6. Tester
+
+Flatpak :
+bash
+
+flatpak list
+
+Podman rootless :
+bash
+
+podman info
+podman ps -a
+
+Podman rootful :
+bash
+
+sudo podman info
+sudo podman ps -a
+
+Puis redémarre tes conteneurs :
+bash
+
+podman start -a
+
+Si tout fonctionne après un redémarrage, tu pourras supprimer les sauvegardes :
+bash
+
+sudo rm -rf /var/lib/flatpak.old
+sudo rm -rf /var/lib/containers/storage.old
+rm -rf ~/.local/bin.old
+rm -rf ~/.local/share/containers/storage.old
+
+Point important : les deux stockages de conteneurs sont indépendants :
+text
+
+/var/lib/containers/storage              → Podman rootful
+~/.local/share/containers/storage        → Podman rootless
+
+
+
+
+
+
+# brew
+/var/home/linuxbrew
+
+# binaires installés en userland
+/var/home/benoit/.local/bin
+
+# flatpaks et données associées
+/var/lib/flatpak/
+
+# podman rootless
+~/.local/share/containers/storage/
+
+# podman root
+/var/lib/containers/storage/
+
+# distrbox rootless (même emplacement que podman)
+~/.local/share/containers/storage/
+
+# distrbox rootl (même emplacement que podman, ou docker)
+# /var/lib/containers/storage/
