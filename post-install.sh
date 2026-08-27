@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# A faire : montage pérenne du disque externe.
+
+
 #####################################################################################
 # Kit de post installation, mise en place environnement. Aucune donnée personnelle. #
 #####################################################################################
@@ -21,14 +24,33 @@ echo ""
 echo "#####################################################################################"
 echo ""
 
-echo 3. "Installation de Brew"
+echo "3. Installation de llama"
+curl -LsSf https://llama.app/install.sh | sh
+echo "✅ llama installé avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
+
+echo 4. "Installation de Brew"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Add linuxbrew to the list of paths usable by `sudo`
+sed -Ei "s/secure_path = (.*)/secure_path = \1:\/home\/linuxbrew\/.linuxbrew\/bin/" /etc/sudoers
+
+# Ajout du path
+echo >> $HOME/.bashrc
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> $HOME/.bashrc
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+
+# logiciels à installer
+brew install smarmontools mc lm-sensors
+
 echo "✅ Brew installé avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
 
-echo "4. Mise en place des alias"
+echo "5. Mise en place des alias"
 echo "alias bh='$HOME/Git/scripts/bash-history-export.sh'" >> ~/.bashrc
 echo "alias gs='$HOME/Git/scripts/git-sync.sh'" >> ~/.bashrc
 # alias gemma='llama-cli --model "/cargo/local_cache/LLM/gemma-3-4b-it-Q8_0.gguf" --conversation --system-prompt "Tu es un assistant compréhensif pour la vie quotidienne : ménage, jardin, travaux, mécanique." --no-mmap --ctx-size 4096'
@@ -39,13 +61,25 @@ echo ""
 echo "#####################################################################################"
 echo ""
 
-echo 5. Installation des flatpaks
+echo 6. Installation des flatpaks
 # Nota bene : on banni le mode --user pour les flatpaks. Pour une question de sécurité : installation "systeme" pour que personne (ni un utilisateur, ni un logiciel malveillant) ne puisse altérer les outils de base. En installation mode --user, un logiciel malveillant n'a besoin d'aucun privilège particulier pour alterer le contenu d'un flatpak. De plus, l'installation en mode --user n'isole pas plus les flatpaks. En mode système, il sont dans /var/lib, et donc deja en dehors des fichiers de l'OS (aucune pollution).
 
 executer_logique() {
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
   flatpak remote-modify --no-filter --enable flathub
   flatpak update -y
+
+
+## ADAPTER LE FALLBACK OFFLINE
+### Ajout de Flathub (statique, prêt à l'emploi si besoin plus tard). En mode offline, on utilise le fichier pré-téléchargé
+### https://github.com/ublue-os/main/blob/main/build_files/install.sh
+#mkdir -p /etc/flatpak/remotes.d/
+#if [ -f /run/bin-cache/flathub.flatpakrepo ]; then
+#    cp /run/bin-cache/flathub.flatpakrepo /etc/flatpak/remotes.d/flathub.flatpakrepo
+#else
+#    curl --retry 3 -Lo /etc/flatpak/remotes.d/flathub.flatpakrepo \
+#        https://dl.flathub.org/repo/flathub.flatpakrepo
+#fi
 
   installer_applications_communes
   if grep -qE "silverblue|kinoite|bazzite" /etc/os-release 2>/dev/null; then
@@ -108,7 +142,6 @@ installer_applications_communes() {
     # Autres applications
     "io.github.kolunmi.Bazaar"
     "org.gnome.gitlab.YaLTeR.VideoTrimmer"
-    "org.gnome.gitlab.somas.Apostrophe"
     "com.github.jeromerobert.pdfarranger"
     "com.github.johnfactotum.Foliate"
     "com.github.PintaProject.Pinta"
@@ -121,7 +154,6 @@ installer_applications_communes() {
     "com.ranfdev.DistroShelf"
     "org.gimp.GIMP"
     "dev.deimoshall.Metamorphosis"
-    "org.scratchmark.Scratchmark"
     "fr.handbrake.ghb"
     "com.github.tchx84.Flatseal"
     "org.mozilla.firefox"
@@ -151,8 +183,8 @@ installer_applications_exclusives_atomic() {
   )
   flatpak install --system -y flathub "${APPS_EXCLUSIVES_ATOMIC[@]}"
 }
-
-executer_logique "$@"
 echo ""
 echo "#####################################################################################"
 echo ""
+
+executer_logique "$@"
