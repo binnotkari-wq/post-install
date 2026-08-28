@@ -1,0 +1,78 @@
+[org/gnome/desktop/input-sources]
+sources=[('xkb', 'fr+azerty')]
+
+[org/gnome/desktop/peripherals/keyboard]
+numlock-state=true
+
+[org/gnome/desktop/wm/keybindings]
+maximize=['<Super>Up']
+unmaximize=['<Super>Down', '<Alt>F5']
+
+[org/gnome/desktop/wm/preferences]
+button-layout=':minimize,maximize,close'
+
+[org/gnome/mutter]
+edge-tiling=true
+
+[org/gnome/mutter/keybindings]
+toggle-tiled-left=['<Super>Left']
+toggle-tiled-right=['<Super>Right']
+
+[org/gnome/desktop/interface]
+accent-color='yellow'
+color-scheme='prefer-dark'
+
+[org/gnome/nautilus/preferences]
+default-folder-viewer='list-view'
+show-create-link=true
+date-time-format='detailed'
+
+[org/gnome/nautilus/list-view]
+use-tree-view=true
+default-visible-columns=['name', 'size', 'type', 'date_modified']
+
+[org/gnome/desktop/privacy]
+report-technical-problems=false
+
+[org/gtk/gtk4/settings/file-chooser]
+show-hidden=true
+sort-directories-first=true
+
+[org/gnome/TextEditor]
+show-line-numbers=true
+highlight-current-line=true
+restore-session=false
+show-map=true
+auto-indent=true
+indent-style='space'
+wrap-text=false
+spellcheck=false
+recolor-window=true
+keybindings='default'
+style-variant='follow'
+draw-spaces=['space', 'tab', 'newline', 'trailing', 'leading']
+
+
+[org/gnome/Ptyxis]
+default-profile-uuid='4e1019f9ba4276ad9c62d05b6a727dd1'
+font-name='Adwaita Mono 11'
+profile-uuids=['4e1019f9ba4276ad9c62d05b6a727dd1']
+use-system-font=false
+window-size=(uint32 135, uint32 35)
+
+[org/gnome/Ptyxis/Profiles/4e1019f9ba4276ad9c62d05b6a727dd1]
+palette='Gruvbox'
+bold-is-bright=true
+opacity=0.80
+
+
+[org/gnome/shell]
+favorite-apps=['kitty.desktop', 'org.mozilla.firefox.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'org.gnome.TextEditor.desktop', 'org.gnome.Calculator.desktop', 'org.gnome.SystemMonitor.desktop']
+enabled-extensions=['dash-to-panel@jderose9.github.com']
+disable-user-extensions=false
+
+[org/gnome/shell/extensions/dash-to-panel]
+dot-position='BOTTOM'
+intellihide=true
+hotkeys-overlay-combo='TEMPORARILY'
+window-preview-title-position='TOP'
