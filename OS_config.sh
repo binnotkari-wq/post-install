@@ -37,7 +37,6 @@ echo "##########################################################################
 echo ""
 
 
-
 echo "2. Desactivation des services et démarrages automatiques"
 
 # https://claude.ai/chat/e6f562df-2a15-4c9a-b0d1-af616df78281
@@ -61,6 +60,10 @@ sudo systemctl disable \
   sssd-kcm.service gssproxy.service \
   pcscd.service
 
+### Services utilisateur : désactivation classique
+sudo systemctl --user disable \
+  tfs-nag.service
+
 ### Services système : masquage (statique ou activation par socket/dbus)
 sudo systemctl mask \
   geoclue.service \
@@ -80,28 +83,7 @@ sudo systemctl --global mask \
   org.gnome.SettingsDaemon.Wwan.service \
   org.gnome.SettingsDaemon.Wwan.target
 
-echo "✅ Services et démarrages automatiques désactivés avec succès."
-echo ""
-echo "#####################################################################################"
-echo ""
-
-
-
-sudo systemctl disable --now  
-
-sudo systemctl disable --now 
-
-
-
-
-
-
-systemctl --user disable --now ntfs-nag.service
-
-
-
-
-# Masquage des autostarts gnome
+### Masquage des autostarts gnome
 mkdir -p ~/.config/autostart
 
 FILES=(
@@ -132,6 +114,7 @@ for f in "${FILES[@]}"; do
 done
 
 
-
-
-
+echo "✅ Services et démarrages automatiques désactivés avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""

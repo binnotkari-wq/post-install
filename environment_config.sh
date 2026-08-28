@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# installer   gnome-shell-extension-dash-to-panel en userland
+
+
 #####################################################################################
 # Kit de post installation, mise en place environnement. Aucune donnée personnelle. #
 #####################################################################################
@@ -8,7 +11,9 @@ set -oue pipefail
 
 echo "1. Mise en place des préférences de firefox"
 sudo mkdir -p /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies
-sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/config/firefox/policies.json -o /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json
+sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/firefox/policies/policies.json -o /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json
+sudo mkdir -p /etc/firefox/policies
+sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/firefox/policies/policies.json -o /etc/firefox/policies/policies.json
 echo "✅ Préférences Firefox mises en place avec succès."
 echo ""
 echo "#####################################################################################"
@@ -48,6 +53,7 @@ APPS_BREW=(
     "smarmontools"
     "mc"
     "lm-sensors"
+    "cosign"
 )    
 brew install "${APPS_BREW[@]}"
 
