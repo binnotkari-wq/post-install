@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# A faire : montage pérenne du disque externe.
-
-
 #####################################################################################
 # Kit de post installation, mise en place environnement. Aucune donnée personnelle. #
 #####################################################################################
@@ -32,6 +29,8 @@ echo "##########################################################################
 echo ""
 
 echo 4. "Installation de Brew"
+
+
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Add linuxbrew to the list of paths usable by `sudo`
@@ -42,10 +41,17 @@ echo >> $HOME/.bashrc
     echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> $HOME/.bashrc
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
 
-# logiciels à installer
-brew install smarmontools mc lm-sensors
-
 echo "✅ Brew installé avec succès."
+
+# Applications à installer
+APPS_BREW=(
+    "smarmontools"
+    "mc"
+    "lm-sensors"
+)    
+brew install "${APPS_BREW[@]}"
+
+echo "✅ Logiciels Brew installé avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
@@ -65,6 +71,7 @@ echo 6. Installation des flatpaks
 # Nota bene : on banni le mode --user pour les flatpaks. Pour une question de sécurité : installation "systeme" pour que personne (ni un utilisateur, ni un logiciel malveillant) ne puisse altérer les outils de base. En installation mode --user, un logiciel malveillant n'a besoin d'aucun privilège particulier pour alterer le contenu d'un flatpak. De plus, l'installation en mode --user n'isole pas plus les flatpaks. En mode système, il sont dans /var/lib, et donc deja en dehors des fichiers de l'OS (aucune pollution).
 
 executer_logique() {
+  flatpak remote-add --system --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
   flatpak remote-modify --no-filter --enable flathub
   flatpak update -y
