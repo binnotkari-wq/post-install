@@ -9,12 +9,32 @@
 
 set -oue pipefail
 
-echo "1. Mise en place des préférences de firefox"
+echo "1. Mise en place des préférences"
 sudo mkdir -p /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies
-sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/firefox/policies/policies.json -o /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json
+sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/firefox/policies/policies.json -o		/var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json
 sudo mkdir -p /etc/firefox/policies
-sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/firefox/policies/policies.json -o /etc/firefox/policies/policies.json
-echo "✅ Préférences Firefox mises en place avec succès."
+sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/firefox/policies/policies.json -o		/etc/firefox/policies/policies.json
+sudo mkdir -p /etc/profile.d
+sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/profile.d/10-environment.sh -o		/etc/profile.d/10-environment.sh
+sudo mkdir -p /etc/profile.d/local.d
+sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/dconf/db/local.d/00-defaults -o		/etc/dconf/db/local.d/00-defaults
+sudo mkdir -p /etc/profile.d/profile
+sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/dconf/profile/user -o				/etc/dconf/profile/user
+curl -sSL "https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/skel/Modèles/Fichier%20Markdown.md" -o		"$HOME/Modèles/Fichier Markdown.md"
+curl -sSL "https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/skel/Modèles/Fichier%20texte.txt" -o		"$HOME/Modèles/Fichier Fichier texte.txt"
+curl -sSL "https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/skel/Modèles/Script.sh" -o			"$HOME/Modèles/Script.sh"
+
+# Permissions des fichiers copiés depuis system_files
+sudo chmod 644 /etc/profile.d/10-environment.sh
+sudo chmod 755 $HOME/Modèles/Script.sh
+
+# activation des préférences dconf injectées
+sudo dconf update
+
+# Ajouter les extragroups
+# - user : extraGroups = [ "libvirtd" "kvm" ]; 
+
+echo "✅ Préférences mises en place avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
@@ -34,8 +54,6 @@ echo "##########################################################################
 echo ""
 
 echo 4. "Installation de Brew"
-
-
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Add linuxbrew to the list of paths usable by `sudo`
