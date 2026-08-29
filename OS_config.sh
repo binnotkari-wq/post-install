@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Intégrer les optimisation mémoire de tweaks.sh et de l'ancien dichier atomic.sh
+
+
 #####################################################################################
 # Kit de post installation, configuration OS. Aucune donnée personnelle.            #
 #####################################################################################

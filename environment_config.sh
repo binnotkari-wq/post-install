@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# faire une vérification générale de l'idempotence
 # installer   gnome-shell-extension-dash-to-panel en userland
 
 
@@ -11,18 +12,19 @@ set -oue pipefail
 
 echo "1. Mise en place des préférences"
 sudo mkdir -p /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies
-sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/firefox/policies/policies.json -o		/var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json
 sudo mkdir -p /etc/firefox/policies
-sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/firefox/policies/policies.json -o		/etc/firefox/policies/policies.json
 sudo mkdir -p /etc/profile.d
-sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/profile.d/10-environment.sh -o		/etc/profile.d/10-environment.sh
 sudo mkdir -p /etc/profile.d/local.d
-sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/dconf/db/local.d/00-defaults -o		/etc/dconf/db/local.d/00-defaults
 sudo mkdir -p /etc/profile.d/profile
-sudo curl -sSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/dconf/profile/user -o				/etc/dconf/profile/user
-curl -sSL "https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/skel/Modèles/Fichier%20Markdown.md" -o		"$HOME/Modèles/Fichier Markdown.md"
-curl -sSL "https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/skel/Modèles/Fichier%20texte.txt" -o		"$HOME/Modèles/Fichier Fichier texte.txt"
-curl -sSL "https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files/etc/skel/Modèles/Script.sh" -o			"$HOME/Modèles/Script.sh"
+file_url="https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files"
+sudo curl -sSL "$file_url/etc/firefox/policies/policies.json" -o 	"/var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json"
+sudo curl -sSL "$file_url/etc/firefox/policies/policies.json" -o	"/etc/firefox/policies/policies.json"
+sudo curl -sSL "$file_url/etc/profile.d/10-environment.sh" -o		"/etc/profile.d/10-environment.sh"
+sudo curl -sSL "$file_url/etc/dconf/db/local.d/00-defaults" -o		"/etc/dconf/db/local.d/00-defaults"
+sudo curl -sSL "$file_url/etc/dconf/profile/user" -o			"/etc/dconf/profile/user"
+curl -sSL "$file_url/etc/skel/Modèles/Fichier%20Markdown.md" -o		"$HOME/Modèles/Fichier Markdown.md"
+curl -sSL "$file_url/etc/skel/Modèles/Fichier%20texte.txt" -o		"$HOME/Modèles/Fichier Fichier texte.txt"
+curl -sSL "$file_url/etc/skel/Modèles/Script.sh" -o			"$HOME/Modèles/Script.sh"
 
 # Permissions des fichiers copiés depuis system_files
 sudo chmod 644 /etc/profile.d/10-environment.sh
@@ -75,7 +77,48 @@ APPS_BREW=(
 )    
 brew install "${APPS_BREW[@]}"
 
-echo "✅ Logiciels Brew installé avec succès."
+brew tap danathar/aib https://github.com/Danathar/atomic-image-builder
+brew install danathar/aib/atomic-image-builder
+
+echo "✅ Brew (et applications brew) installé avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
+
+echo "4. Installation de ryzenadj en distrobox (volontairement hors de l'OS, car provient d'un dépot tiers)"
+# --- Configuration ---
+BOX_NAME="ryzenadj-rootbox"
+ALIAS_BOX_NAME="${BOX_NAME}"   # nom de la box utilisée dans l'alias final (adapter si différent)
+STAPM_LIMIT=15000
+FAST_LIMIT=15000
+SLOW_LIMIT=15000
+SHELL_RC="${HOME}/.bashrc"
+
+echo "==> Création de la distrobox root '${BOX_NAME}'"
+distrobox-create --root "${BOX_NAME}" --image registry.fedoraproject.org/fedora-toolbox:latest --yes
+
+echo "==> Installation de ryzenadj dans la distrobox (root)"
+distrobox-enter --root -n "${BOX_NAME}" -- bash -c "
+    set -euo pipefail
+    sudo dnf5 -y copr enable ublue-os/bazzite
+    sudo dnf5 install -y --setopt=install_weak_deps=False ryzenadj
+    sudo dnf5 -y copr disable ublue-os/bazzite
+"
+
+echo "==> Export du binaire ryzenadj vers l'hôte"
+distrobox-enter --root -n "${BOX_NAME}" -- distrobox-export --bin /usr/bin/ryzenadj
+
+ALIAS_LINE="alias ryzenadj='distrobox-enter --root -n ${ALIAS_BOX_NAME} -- /usr/bin/ryzenadj --stapm-limit=${STAPM_LIMIT} --fast-limit=${FAST_LIMIT} --slow-limit=${SLOW_LIMIT}'"
+
+if grep -qF "alias ryzenadj=" "${SHELL_RC}" 2>/dev/null; then
+    echo "==> Alias 'ryzenadj' déjà présent dans ${SHELL_RC}, remplacement"
+    sed -i "\|alias ryzenadj=|d" "${SHELL_RC}"
+fi
+
+echo "==> Ajout de l'alias dans ${SHELL_RC}"
+echo "${ALIAS_LINE}" >> "${SHELL_RC}"
+
+echo "✅ ryzenadj installé avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
@@ -83,6 +126,8 @@ echo ""
 echo "5. Mise en place des alias"
 echo "alias bh='$HOME/Git/scripts/bash-history-export.sh'" >> ~/.bashrc
 echo "alias gs='$HOME/Git/scripts/git-sync.sh'" >> ~/.bashrc
+echo "alias ryzen-low='ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000'" >> ~/.bashrc
+echo "alias ryzen-default='ryzenadj --stapm-limit=25000 --fast-limit=25000 --slow-limit=25000'" >> ~/.bashrc
 # alias gemma='llama-cli --model "/cargo/local_cache/LLM/gemma-3-4b-it-Q8_0.gguf" --conversation --system-prompt "Tu es un assistant compréhensif pour la vie quotidienne : ménage, jardin, travaux, mécanique." --no-mmap --ctx-size 4096'
 # alias qwen='llama-cli --model "/cargo/local_cache/LLM/Qwen2.5-Coder-3B-Instruct-abliterated-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant concis en ingénierie des systèmes linux, scripting, développement." --no-mmap --ctx-size 4096'
 # alias llama='llama-cli --model "/cargo/local_cache/LLM/Llama-3.2-3B-Instruct-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant personnel pour aider à explorer de nouveaux concepts." --no-mmap --ctx-size 4096'
@@ -93,7 +138,7 @@ echo ""
 
 echo 6. Installation des flatpaks
 # Nota bene : on banni le mode --user pour les flatpaks. Pour une question de sécurité : installation "systeme" pour que personne (ni un utilisateur, ni un logiciel malveillant) ne puisse altérer les outils de base. En installation mode --user, un logiciel malveillant n'a besoin d'aucun privilège particulier pour alterer le contenu d'un flatpak. De plus, l'installation en mode --user n'isole pas plus les flatpaks. En mode système, il sont dans /var/lib, et donc deja en dehors des fichiers de l'OS (aucune pollution).
-
+# Peut-être, n'installer que l'éditeur de texte et bazaar, ainsi que ce qu'on ne voit pas dans bazaar (mangohid, proton GE, boxtron...).
 executer_logique() {
   flatpak remote-add --system --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
