@@ -13,7 +13,7 @@ mettre_en_place_repo_github
 relocaliser_containers
 relocaliser_vm
 installer_llama
-# installer_brew                      # mettre au point la priorité sur les paquets système. Faire tests dans une vm.
+installer_brew
 installer_AIB
 installer_flatpaks                  # pour l'instant, juste les apps de base. Le reste à intégrer avec conditions selon la distribution
 masquer_autostarts_gnome
