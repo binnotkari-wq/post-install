@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # faire une vérification générale de l'idempotence
-# installer   gnome-shell-extension-dash-to-panel en userland
+
 
 
 #####################################################################################
@@ -10,6 +10,18 @@
 
 set -oue pipefail
 
+executer_logique () {
+mettre_en_place_preferences
+mettre_en_place_alias
+mettre_en_place_repo_github
+installer_llama
+installer_brew                      # comment faire pour que les paquets système soient toujours priorisés sur les paquets brew ?
+# installer_ryzenadj                # fiabiliser les alias
+installer_flatpaks                  # pour l'instant, juste les apps de base. Le reste à intégrer avec conditions selon la distribution
+masquer_autostarts_gnome
+}
+
+mettre_en_place_preferences () {
 echo "1. Mise en place des préférences"
 sudo mkdir -p /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies
 sudo mkdir -p /etc/firefox/policies
@@ -40,22 +52,43 @@ echo "✅ Préférences mises en place avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
+}
 
-echo "2. Mise en place du repo Github"
+mettre_en_place_alias () {
+echo "2. Mise en place des alias"
+echo "alias bh='$HOME/Git/scripts/bash-history-export.sh'" >> ~/.bashrc
+echo "alias gs='$HOME/Git/scripts/git-sync.sh'" >> ~/.bashrc
+echo "alias ryzen-low='ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000'" >> ~/.bashrc
+echo "alias ryzen-default='ryzenadj --stapm-limit=25000 --fast-limit=25000 --slow-limit=25000'" >> ~/.bashrc
+# alias gemma='llama-cli --model "/cargo/local_cache/LLM/gemma-3-4b-it-Q8_0.gguf" --conversation --system-prompt "Tu es un assistant compréhensif pour la vie quotidienne : ménage, jardin, travaux, mécanique." --no-mmap --ctx-size 4096'
+# alias qwen='llama-cli --model "/cargo/local_cache/LLM/Qwen2.5-Coder-3B-Instruct-abliterated-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant concis en ingénierie des systèmes linux, scripting, développement." --no-mmap --ctx-size 4096'
+# alias llama='llama-cli --model "/cargo/local_cache/LLM/Llama-3.2-3B-Instruct-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant personnel pour aider à explorer de nouveaux concepts." --no-mmap --ctx-size 4096'
+echo "✅ Alias mis en place avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
+}
+
+mettre_en_place_repo_github () {
+echo "3. Mise en place du repo Github"
 curl -sSL https://raw.githubusercontent.com/binnotkari-wq/scripts/main/git-sync.sh| bash
 echo "✅ Repo Github mis en place avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
+}
 
-echo "3. Installation de llama"
+installer_llama () {
+echo "4. Installation de llama"
 curl -LsSf https://llama.app/install.sh | sh
 echo "✅ llama installé avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
+}
 
-echo 4. "Installation de Brew"
+installer_brew () {
+echo 5. "Installation de Brew"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Add linuxbrew to the list of paths usable by `sudo`
@@ -80,11 +113,15 @@ brew install "${APPS_BREW[@]}"
 brew tap danathar/aib https://github.com/Danathar/atomic-image-builder
 brew install danathar/aib/atomic-image-builder
 
+brew cleanup
+
 echo "✅ Brew (et applications brew) installé avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
+}
 
+installer_ryzenadj () {
 echo "4. Installation de ryzenadj en distrobox (volontairement hors de l'OS, car provient d'un dépot tiers)"
 # --- Configuration ---
 BOX_NAME="ryzenadj-rootbox"
@@ -122,145 +159,98 @@ echo "✅ ryzenadj installé avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
-
-echo "5. Mise en place des alias"
-echo "alias bh='$HOME/Git/scripts/bash-history-export.sh'" >> ~/.bashrc
-echo "alias gs='$HOME/Git/scripts/git-sync.sh'" >> ~/.bashrc
-echo "alias ryzen-low='ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000'" >> ~/.bashrc
-echo "alias ryzen-default='ryzenadj --stapm-limit=25000 --fast-limit=25000 --slow-limit=25000'" >> ~/.bashrc
-# alias gemma='llama-cli --model "/cargo/local_cache/LLM/gemma-3-4b-it-Q8_0.gguf" --conversation --system-prompt "Tu es un assistant compréhensif pour la vie quotidienne : ménage, jardin, travaux, mécanique." --no-mmap --ctx-size 4096'
-# alias qwen='llama-cli --model "/cargo/local_cache/LLM/Qwen2.5-Coder-3B-Instruct-abliterated-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant concis en ingénierie des systèmes linux, scripting, développement." --no-mmap --ctx-size 4096'
-# alias llama='llama-cli --model "/cargo/local_cache/LLM/Llama-3.2-3B-Instruct-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant personnel pour aider à explorer de nouveaux concepts." --no-mmap --ctx-size 4096'
-echo "✅ Alias mis en place avec succès."
-echo ""
-echo "#####################################################################################"
-echo ""
+}
 
 echo 6. Installation des flatpaks
 # Nota bene : on banni le mode --user pour les flatpaks. Pour une question de sécurité : installation "systeme" pour que personne (ni un utilisateur, ni un logiciel malveillant) ne puisse altérer les outils de base. En installation mode --user, un logiciel malveillant n'a besoin d'aucun privilège particulier pour alterer le contenu d'un flatpak. De plus, l'installation en mode --user n'isole pas plus les flatpaks. En mode système, il sont dans /var/lib, et donc deja en dehors des fichiers de l'OS (aucune pollution).
 # Peut-être, n'installer que l'éditeur de texte et bazaar, ainsi que ce qu'on ne voit pas dans bazaar (mangohid, proton GE, boxtron...).
-executer_logique() {
+installer_flatpaks() {
   flatpak remote-add --system --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
   flatpak remote-modify --no-filter --enable flathub
   flatpak update -y
 
-
-## ADAPTER LE FALLBACK OFFLINE
-### Ajout de Flathub (statique, prêt à l'emploi si besoin plus tard). En mode offline, on utilise le fichier pré-téléchargé
-### https://github.com/ublue-os/main/blob/main/build_files/install.sh
-#mkdir -p /etc/flatpak/remotes.d/
-#if [ -f /run/bin-cache/flathub.flatpakrepo ]; then
-#    cp /run/bin-cache/flathub.flatpakrepo /etc/flatpak/remotes.d/flathub.flatpakrepo
-#else
-#    curl --retry 3 -Lo /etc/flatpak/remotes.d/flathub.flatpakrepo \
-#        https://dl.flathub.org/repo/flathub.flatpakrepo
-#fi
-
-  installer_applications_communes
-  if grep -qE "silverblue|kinoite|bazzite" /etc/os-release 2>/dev/null; then
-    installer_applications_exclusives_atomic
-  fi  
-  if ! grep -qE "bazzite" /etc/os-release 2>/dev/null; then
-    installer_applications_gaming_non_bazzite
-  fi
-
-  echo "Nettoyage des résidus éventuels"
-  flatpak uninstall --unused
-
-  echo "Application des permissions spécifiques"
-  flatpak override --user --env=MANGOHUD=1 com.valvesoftware.Steam
-  sudo flatpak override --env=MANGOHUD=1 com.valvesoftware.Steam
-  # flatpak override com.usebottles.bottles --user --filesystem=xdg-data/applications
-  sudo flatpak override  --talk-name=org.freedesktop.Flatpak --filesystem=home io.github.qwersyk.Newelle
-  echo "✅ Flatpaks installés avec succès (system-wide)."
-}
-
-installer_applications_gaming_non_bazzite() {
-  # Application déjà présentes sur Bazzite en natif
-  APPS_GAMING_NON_BAZZITE=(
-    # "net.lutris.Lutris"
-    "com.valvesoftware.Steam"
-    "com.valvesoftware.Steam.CompatibilityTool.Proton-GE"
-    "com.valvesoftware.Steam.CompatibilityTool.Boxtron"
-    "org.freedesktop.Platform.VulkanLayer.gamescope"
-    "org.freedesktop.Platform.VulkanLayer.MangoHud"
+  BASE_FLATPAKS=(
+  "io.github.kolunmi.Bazaar"
+  "org.gnome.TextEditor"
   )
-  flatpak install --system -y flathub "${APPS_GAMING_NON_BAZZITE[@]}"
-}
+  flatpak install -y flathub "${BASE_FLATPAKS[@]}"
 
-installer_applications_communes() {
-  APPS_COMMUNES=(
-    "org.gnome.Calculator"
-    "org.gnome.NautilusPreviewer"
-    "org.gnome.Characters"
-    "org.gnome.TextEditor"
-    "org.gnome.Weather"
-    "org.gnome.Loupe"
-    "org.gnome.Snapshot"
-    "org.gnome.baobab"
-    "org.gnome.Maps"
-    "org.gnome.font-viewer"
-    "org.gnome.clocks"
-    "org.gnome.Papers"
-    "org.gnome.Logs"
-    "org.gnome.Decibels"
-    "org.gnome.SimpleScan"
-    "org.gnome.Music"
-    "org.gnome.Showtime"
-    "org.gnome.Firmware"
-    "org.gnome.SoundRecorder"
-    # "org.gnome.DejaDup"
-    "org.gnome.Boxes"
-    "org.gnome.meld"
-    "org.gnome.World.Secrets"
-
-    # Autres applications
-    "io.github.kolunmi.Bazaar"
-    "org.gnome.gitlab.YaLTeR.VideoTrimmer"
-    "com.github.jeromerobert.pdfarranger"
-    "com.github.johnfactotum.Foliate"
-    "com.github.PintaProject.Pinta"
-    "io.github.revisto.drum-machine"
-    "io.gitlab.adhami3310.Impression"
-    # "net.nokyan.Resources"
-    "ca.desrt.dconf-editor"
-    "de.haeckerfelix.Shortwave"
-    "de.haeckerfelix.Fragments"
-    "com.ranfdev.DistroShelf"
-    "org.gimp.GIMP"
-    "dev.deimoshall.Metamorphosis"
-    "fr.handbrake.ghb"
-    "com.github.tchx84.Flatseal"
-    "org.mozilla.firefox"
-    "tv.kodi.Kodi"
-    "org.libreoffice.LibreOffice"
-    "io.github.flattool.Ignition"
-    "io.github.flattool.Warehouse"
-    "it.mijorus.smile"
-    "page.tesk.Refine"
-    "org.nickvision.tagger"
-    "org.tenacityaudio.Tenacity"
-    "com.github.fabiocolacio.marker"
-
-    # Gaming
-    "com.heroicgameslauncher.hgl"
-    # "com.usebottles.bottles"
-  )
-  flatpak install --system -y flathub "${APPS_COMMUNES[@]}"
-}
-
-installer_applications_exclusives_atomic() {
   APPS_EXCLUSIVES_ATOMIC=(
     # Application à installer, ou déjà installée, en natif sur Nixos
     "io.github.ilya_zlobintsev.LACT"
     "io.github.qwersyk.Newelle"
     # "org.gnome.Extensions"
   )
+  if grep -qE "silverblue|kinoite|bazzite" /etc/os-release 2>/dev/null; then
   flatpak install --system -y flathub "${APPS_EXCLUSIVES_ATOMIC[@]}"
+  fi
+
+  echo "Nettoyage des résidus éventuels"
+  flatpak uninstall --unused
 }
-echo ""
-echo "#####################################################################################"
-echo ""
+
+
+
+
+desactiver_autostarts() {
+  # Bazzite lance des apps au démarrage de la session de bureau. On annule ces lancements.
+  # Créer le dossier autostart local s'il n'existe pas
+  mkdir -p ~/.config/autostart
+
+  # Liste des services à désactiver
+  services=(
+    "steam.desktop"
+    "vboxclient.desktop"
+    "vmware-user.desktop"
+    "orca-autostart.desktop"
+    "org.gnome.Evolution-alarm-notify.desktop"
+    "bazzite-announcement.desktop"
+  )
+
+  # Boucle pour créer les fichiers "Hidden=true"
+  for service in "${services[@]}"; do
+    echo "[Desktop Entry]
+  Type=Application
+  Name=$service
+  Exec=/bin/true
+  Hidden=true" > ~/.config/autostart/"$service"
+  done
+}
+
+
+
+
+
+masquer_autostarts_gnome () {
+mkdir -p ~/.config/autostart
+
+FILES=(
+  orca-autostart.desktop
+  geoclue-demo-agent.desktop
+  ibus-mozc-launch-xwayland.desktop
+  steam.desktop
+)
+
+for f in "${FILES[@]}"; do
+  src="/etc/xdg/autostart/$f"
+  dst="$HOME/.config/autostart/$f"
+
+  if [[ ! -f "$src" ]]; then
+    echo "⚠️  $f introuvable dans /etc/xdg/autostart, ignoré."
+    continue
+  fi
+
+  cp -f "$src" "$dst"
+
+  if grep -q "^Hidden=" "$dst"; then
+    sed -i 's/^Hidden=.*/Hidden=true/' "$dst"
+  else
+    echo "Hidden=true" >> "$dst"
+  fi
+
+  echo "✅ $f désactivé (override créé dans ~/.config/autostart/)"
+done
+}
 
 executer_logique "$@"
