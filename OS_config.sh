@@ -86,38 +86,7 @@ sudo systemctl --global mask \
   org.gnome.SettingsDaemon.Wwan.service \
   org.gnome.SettingsDaemon.Wwan.target
 
-### Masquage des autostarts gnome
-mkdir -p ~/.config/autostart
-
-FILES=(
-  orca-autostart.desktop
-  geoclue-demo-agent.desktop
-  ibus-mozc-launch-xwayland.desktop
-  steam.desktop
-)
-
-for f in "${FILES[@]}"; do
-  src="/etc/xdg/autostart/$f"
-  dst="$HOME/.config/autostart/$f"
-
-  if [[ ! -f "$src" ]]; then
-    echo "⚠️  $f introuvable dans /etc/xdg/autostart, ignoré."
-    continue
-  fi
-
-  cp -f "$src" "$dst"
-
-  if grep -q "^Hidden=" "$dst"; then
-    sed -i 's/^Hidden=.*/Hidden=true/' "$dst"
-  else
-    echo "Hidden=true" >> "$dst"
-  fi
-
-  echo "✅ $f désactivé (override créé dans ~/.config/autostart/)"
-done
-
-
-echo "✅ Services et démarrages automatiques désactivés avec succès."
+echo "✅ Services désactivés avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
