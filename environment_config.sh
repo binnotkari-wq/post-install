@@ -115,9 +115,11 @@ echo 7. "Installation de Brew"
 sudo sed -Ei "s/secure_path = (.*)/secure_path = \1:\/home\/linuxbrew\/.linuxbrew\/bin/" /etc/sudoers
 
 # Ajout du path
-# echo >> "$HOME/.bashrc"
-#    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> "$HOME/.bashrc"
-#    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+echo >> "$HOME/.bashrc"
+   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> "$HOME/.bashrc"
+   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+# Repriorisation du PATH système natif pour éviter la concurrence avec le path de homebrew
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 echo "✅ Brew installé avec succès."
 
