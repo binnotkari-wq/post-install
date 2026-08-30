@@ -16,7 +16,7 @@ mettre_en_place_alias
 mettre_en_place_repo_github
 installer_llama
 installer_brew                      # comment faire pour que les paquets système soient toujours priorisés sur les paquets brew ?
-# installer_ryzenadj                # fiabiliser les alias
+installer_ryzenadj
 installer_flatpaks                  # pour l'instant, juste les apps de base. Le reste à intégrer avec conditions selon la distribution
 masquer_autostarts_gnome
 }
@@ -58,8 +58,6 @@ mettre_en_place_alias () {
 echo "2. Mise en place des alias"
 echo "alias bh='$HOME/Git/scripts/bash-history-export.sh'" >> ~/.bashrc
 echo "alias gs='$HOME/Git/scripts/git-sync.sh'" >> ~/.bashrc
-echo "alias ryzen-low='ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000'" >> ~/.bashrc
-echo "alias ryzen-default='ryzenadj --stapm-limit=25000 --fast-limit=25000 --slow-limit=25000'" >> ~/.bashrc
 # alias gemma='llama-cli --model "/cargo/local_cache/LLM/gemma-3-4b-it-Q8_0.gguf" --conversation --system-prompt "Tu es un assistant compréhensif pour la vie quotidienne : ménage, jardin, travaux, mécanique." --no-mmap --ctx-size 4096'
 # alias qwen='llama-cli --model "/cargo/local_cache/LLM/Qwen2.5-Coder-3B-Instruct-abliterated-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant concis en ingénierie des systèmes linux, scripting, développement." --no-mmap --ctx-size 4096'
 # alias llama='llama-cli --model "/cargo/local_cache/LLM/Llama-3.2-3B-Instruct-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant personnel pour aider à explorer de nouveaux concepts." --no-mmap --ctx-size 4096'
@@ -126,9 +124,6 @@ echo "4. Installation de ryzenadj en distrobox (volontairement hors de l'OS, car
 # --- Configuration ---
 BOX_NAME="ryzenadj-rootbox"
 ALIAS_BOX_NAME="${BOX_NAME}"   # nom de la box utilisée dans l'alias final (adapter si différent)
-STAPM_LIMIT=15000
-FAST_LIMIT=15000
-SLOW_LIMIT=15000
 SHELL_RC="${HOME}/.bashrc"
 
 echo "==> Création de la distrobox root '${BOX_NAME}'"
@@ -145,7 +140,8 @@ distrobox-enter --root -n "${BOX_NAME}" -- bash -c "
 echo "==> Export du binaire ryzenadj vers l'hôte"
 distrobox-enter --root -n "${BOX_NAME}" -- distrobox-export --bin /usr/bin/ryzenadj
 
-ALIAS_LINE="alias ryzenadj='distrobox-enter --root -n ${ALIAS_BOX_NAME} -- /usr/bin/ryzenadj --stapm-limit=${STAPM_LIMIT} --fast-limit=${FAST_LIMIT} --slow-limit=${SLOW_LIMIT}'"
+ALIAS_LINE_LOW="alias ryzenadj='distrobox-enter --root -n ${ALIAS_BOX_NAME} -- /usr/bin/ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000'"
+ALIAS_LINE_DEFAULT="alias ryzenadj='distrobox-enter --root -n ${ALIAS_BOX_NAME} -- /usr/bin/ryzenadj --stapm-limit=25000--fast-limit=25000 --slow-limit=25000'"
 
 if grep -qF "alias ryzenadj=" "${SHELL_RC}" 2>/dev/null; then
     echo "==> Alias 'ryzenadj' déjà présent dans ${SHELL_RC}, remplacement"
@@ -190,19 +186,16 @@ installer_flatpaks() {
   flatpak uninstall --unused
 }
 
-
-
-
-desactiver_autostarts() {
-  # Bazzite lance des apps au démarrage de la session de bureau. On annule ces lancements.
-  # Créer le dossier autostart local s'il n'existe pas
+masquer_autostarts_gnome () {
+  echo 7. Masquage des applications lancées à l'ouverture de session
   mkdir -p ~/.config/autostart
 
-  # Liste des services à désactiver
+  # Liste des services et application à masquer
   services=(
     "steam.desktop"
     "vboxclient.desktop"
     "vmware-user.desktop"
+    "spice-vdagent"
     "orca-autostart.desktop"
     "org.gnome.Evolution-alarm-notify.desktop"
     "bazzite-announcement.desktop"
@@ -216,41 +209,12 @@ desactiver_autostarts() {
   Exec=/bin/true
   Hidden=true" > ~/.config/autostart/"$service"
   done
-}
 
+echo "✅ Flatpaks installés avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
 
-
-
-
-masquer_autostarts_gnome () {
-mkdir -p ~/.config/autostart
-
-FILES=(
-  orca-autostart.desktop
-  geoclue-demo-agent.desktop
-  ibus-mozc-launch-xwayland.desktop
-  steam.desktop
-)
-
-for f in "${FILES[@]}"; do
-  src="/etc/xdg/autostart/$f"
-  dst="$HOME/.config/autostart/$f"
-
-  if [[ ! -f "$src" ]]; then
-    echo "⚠️  $f introuvable dans /etc/xdg/autostart, ignoré."
-    continue
-  fi
-
-  cp -f "$src" "$dst"
-
-  if grep -q "^Hidden=" "$dst"; then
-    sed -i 's/^Hidden=.*/Hidden=true/' "$dst"
-  else
-    echo "Hidden=true" >> "$dst"
-  fi
-
-  echo "✅ $f désactivé (override créé dans ~/.config/autostart/)"
-done
 }
 
 executer_logique "$@"
