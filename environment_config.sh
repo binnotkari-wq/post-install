@@ -15,7 +15,8 @@ mettre_en_place_preferences
 mettre_en_place_alias
 mettre_en_place_repo_github
 installer_llama
-installer_brew                      # comment faire pour que les paquets système soient toujours priorisés sur les paquets brew ?
+# installer_brew                      # mettre au point la priorité sur les paquets système. Faire tests dans une vm.
+installer_AIB
 installer_ryzenadj
 installer_flatpaks                  # pour l'instant, juste les apps de base. Le reste à intégrer avec conditions selon la distribution
 masquer_autostarts_gnome
