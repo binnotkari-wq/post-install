@@ -136,7 +136,7 @@ echo ""
 }
 
 installer_ryzenadj () {
-echo "4. Installation de ryzenadj en distrobox (volontairement hors de l'OS, car provient d'un dépot tiers)"
+echo "4. Installation de ryzenadj en distrobox,volontairement hors de l'OS, car provient d'un dépot tiers"
 # --- Configuration ---
 BOX_NAME="ryzenadj-rootbox"
 ALIAS_BOX_NAME="${BOX_NAME}"   # nom de la box utilisée dans l'alias final (adapter si différent)
