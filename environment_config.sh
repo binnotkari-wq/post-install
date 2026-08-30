@@ -156,8 +156,8 @@ distrobox-enter --root -n "${BOX_NAME}" -- bash -c "
 echo "==> Export du binaire ryzenadj vers l'hôte"
 distrobox-enter --root -n "${BOX_NAME}" -- distrobox-export --bin /usr/bin/ryzenadj
 
-ALIAS_LINE_LOW="alias ryzenadj='distrobox-enter --root -n ${ALIAS_BOX_NAME} -- /usr/bin/ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000'"
-ALIAS_LINE_DEFAULT="alias ryzenadj='distrobox-enter --root -n ${ALIAS_BOX_NAME} -- /usr/bin/ryzenadj --stapm-limit=25000--fast-limit=25000 --slow-limit=25000'"
+ALIAS_LINE_LOW="alias ryzen_low='distrobox-enter --root -n ${ALIAS_BOX_NAME} -- /usr/bin/ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000'"
+ALIAS_LINE_DEFAULT="alias ryzen_default='distrobox-enter --root -n ${ALIAS_BOX_NAME} -- /usr/bin/ryzenadj --stapm-limit=25000--fast-limit=25000 --slow-limit=25000'"
 
 if grep -qF "alias ryzenadj=" "${SHELL_RC}" 2>/dev/null; then
     echo "==> Alias 'ryzenadj' déjà présent dans ${SHELL_RC}, remplacement"
