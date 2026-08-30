@@ -77,8 +77,8 @@ relocaliser_containers () {
 echo "4. Relocaliser containers"
 sudo mkdir -p /var/data
 sudo chown -R 1000:1000 /var/data
-mkdir -p "/var/data/.local/share/containers"
-ln -s -- "/var/data/.local/share/containers" "$HOME/.local/share/containers"
+mkdir -p "/var/data/containers"
+ln -s -- "/var/data/containers" "$HOME/.local/share/containers"
 echo "✅ Dossier .local/share/containers relocalisé dans /var/data avec succès."
 echo ""
 echo "#####################################################################################"
