@@ -90,7 +90,7 @@ echo 5. "Installation de Brew"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Add linuxbrew to the list of paths usable by `sudo`
-sed -Ei "s/secure_path = (.*)/secure_path = \1:\/home\/linuxbrew\/.linuxbrew\/bin/" /etc/sudoers
+sudo sed -Ei "s/secure_path = (.*)/secure_path = \1:\/home\/linuxbrew\/.linuxbrew\/bin/" /etc/sudoers
 
 # Ajout du path
 echo >> $HOME/.bashrc
@@ -101,19 +101,27 @@ echo "✅ Brew installé avec succès."
 
 # Applications à installer
 APPS_BREW=(
-    "smarmontools"
+    "smartmontools"
     "mc"
     "lm-sensors"
     "cosign"
 )    
 brew install "${APPS_BREW[@]}"
 
-brew tap danathar/aib https://github.com/Danathar/atomic-image-builder
-brew install danathar/aib/atomic-image-builder
-
 brew cleanup
 
 echo "✅ Brew (et applications brew) installé avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
+}
+
+installer_AIB () {
+echo "4. Installation de Atomic Image Builder
+mkdir -p ~/.local/bin
+curl -fsSL https://raw.githubusercontent.com/Danathar/atomic-image-builder/main/contrib/aib -o ~/.local/bin/aib
+chmod +x ~/.local/bin/aib
+echo "✅ atomic image builder installé avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
