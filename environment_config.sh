@@ -37,7 +37,7 @@ curl -sSL "$file_url/etc/skel/Modèles/Script.sh" -o			"$HOME/Modèles/Script.sh
 
 # Permissions des fichiers copiés depuis system_files
 sudo chmod 644 /etc/profile.d/10-environment.sh
-sudo chmod 755 $HOME/Modèles/Script.sh
+sudo chmod 755 "$HOME/Modèles/Script.sh"
 
 # activation des préférences dconf injectées
 sudo dconf update
@@ -101,9 +101,9 @@ echo 5. "Installation de Brew"
 sudo sed -Ei "s/secure_path = (.*)/secure_path = \1:\/home\/linuxbrew\/.linuxbrew\/bin/" /etc/sudoers
 
 # Ajout du path
-echo >> $HOME/.bashrc
-    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> $HOME/.bashrc
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+# echo >> "$HOME/.bashrc"
+#    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> "$HOME/.bashrc"
+#    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
 
 echo "✅ Brew installé avec succès."
 
@@ -125,7 +125,7 @@ echo ""
 }
 
 installer_AIB () {
-echo "4. Installation de Atomic Image Builder
+echo "4. Installation de Atomic Image Builder"
 mkdir -p ~/.local/bin
 curl -fsSL https://raw.githubusercontent.com/Danathar/atomic-image-builder/main/contrib/aib -o ~/.local/bin/aib
 chmod +x ~/.local/bin/aib
@@ -165,7 +165,8 @@ if grep -qF "alias ryzenadj=" "${SHELL_RC}" 2>/dev/null; then
 fi
 
 echo "==> Ajout de l'alias dans ${SHELL_RC}"
-echo "${ALIAS_LINE}" >> "${SHELL_RC}"
+echo "${ALIAS_LINE_LOW}" >> "${SHELL_RC}"
+echo "${ALIAS_LINE_DEFAULT}" >> "${SHELL_RC}"
 
 echo "✅ ryzenadj installé avec succès."
 echo ""
@@ -203,7 +204,7 @@ installer_flatpaks() {
 }
 
 masquer_autostarts_gnome () {
-  echo 7. Masquage des applications lancées à l'ouverture de session
+  echo "7. Masquage des applications lancées à l'ouverture de session"
   mkdir -p ~/.config/autostart
 
   # Liste des services et application à masquer
