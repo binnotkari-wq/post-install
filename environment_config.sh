@@ -11,6 +11,7 @@ mettre_en_place_preferences
 mettre_en_place_alias
 mettre_en_place_repo_github
 relocaliser_containers
+relocaliser_vm
 installer_llama
 # installer_brew                      # mettre au point la priorité sur les paquets système. Faire tests dans une vm.
 installer_AIB
@@ -85,8 +86,20 @@ echo "##########################################################################
 echo ""
 }
 
+relocaliser_vm () {
+echo "5. Relocaliser machines virtuelles"
+sudo mkdir -p /var/data
+sudo chown -R 1000:1000 /var/data
+mkdir -p "/var/data/org.gnome.Boxes"
+ln -s -- "/var/data/org.gnome.Boxes" "$HOME/.var/app/org.gnome.Boxes"
+echo "✅ Dossier .var/app/org.gnome.Boxes relocalisé dans /var/data avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
+}
+
 installer_llama () {
-echo "5. Installation de llama"
+echo "6. Installation de llama"
 curl -LsSf https://llama.app/install.sh | sh
 echo "✅ llama installé avec succès."
 echo ""
@@ -95,7 +108,7 @@ echo ""
 }
 
 installer_brew () {
-echo 6. "Installation de Brew"
+echo 7. "Installation de Brew"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Add linuxbrew to the list of paths usable by `sudo`
@@ -126,7 +139,7 @@ echo ""
 }
 
 installer_AIB () {
-echo "7. Installation de Atomic Image Builder"
+echo "8. Installation de Atomic Image Builder"
 mkdir -p ~/.local/bin
 curl -fsSL https://raw.githubusercontent.com/Danathar/atomic-image-builder/main/contrib/aib -o ~/.local/bin/aib
 chmod +x ~/.local/bin/aib
@@ -136,7 +149,7 @@ echo "##########################################################################
 echo ""
 }
 
-echo 8. Installation des flatpaks
+echo 9. Installation des flatpaks
 # Nota bene : on banni le mode --user pour les flatpaks. Pour une question de sécurité : installation "systeme" pour que personne (ni un utilisateur, ni un logiciel malveillant) ne puisse altérer les outils de base. En installation mode --user, un logiciel malveillant n'a besoin d'aucun privilège particulier pour alterer le contenu d'un flatpak. De plus, l'installation en mode --user n'isole pas plus les flatpaks. En mode système, il sont dans /var/lib, et donc deja en dehors des fichiers de l'OS (aucune pollution).
 # Peut-être, n'installer que l'éditeur de texte et bazaar, ainsi que ce qu'on ne voit pas dans bazaar (mangohid, proton GE, boxtron...).
 installer_flatpaks() {
