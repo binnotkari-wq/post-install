@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# faire une vérification générale de l'idempotence
-
-
-
 #####################################################################################
 # Kit de post installation, mise en place environnement. Aucune donnée personnelle. #
 #####################################################################################
@@ -72,6 +68,17 @@ mettre_en_place_repo_github () {
 echo "3. Mise en place du repo Github"
 curl -sSL https://raw.githubusercontent.com/binnotkari-wq/scripts/main/git-sync.sh| bash
 echo "✅ Repo Github mis en place avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
+}
+
+relocaliser_containers () {
+sudo mkdir -p /var/data
+sudo chown -R 1000:1000 /var/data
+mkdir -p "/var/data/.local/share/containers"
+ln -s -- "/var/data/.local/share/containers" "$HOME/.local/share/containers"
+echo "✅ Dossier .local/share/containers relocalisé dans /var/data avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
