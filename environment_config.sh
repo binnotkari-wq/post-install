@@ -10,10 +10,10 @@ executer_logique () {
 mettre_en_place_preferences
 mettre_en_place_alias
 mettre_en_place_repo_github
+relocaliser_containers
 installer_llama
 # installer_brew                      # mettre au point la priorité sur les paquets système. Faire tests dans une vm.
 installer_AIB
-installer_ryzenadj
 installer_flatpaks                  # pour l'instant, juste les apps de base. Le reste à intégrer avec conditions selon la distribution
 masquer_autostarts_gnome
 }
@@ -74,6 +74,7 @@ echo ""
 }
 
 relocaliser_containers () {
+echo "4. Relocaliser containers"
 sudo mkdir -p /var/data
 sudo chown -R 1000:1000 /var/data
 mkdir -p "/var/data/.local/share/containers"
@@ -85,7 +86,7 @@ echo ""
 }
 
 installer_llama () {
-echo "4. Installation de llama"
+echo "5. Installation de llama"
 curl -LsSf https://llama.app/install.sh | sh
 echo "✅ llama installé avec succès."
 echo ""
@@ -94,7 +95,7 @@ echo ""
 }
 
 installer_brew () {
-echo 5. "Installation de Brew"
+echo 6. "Installation de Brew"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Add linuxbrew to the list of paths usable by `sudo`
@@ -125,7 +126,7 @@ echo ""
 }
 
 installer_AIB () {
-echo "4. Installation de Atomic Image Builder"
+echo "7. Installation de Atomic Image Builder"
 mkdir -p ~/.local/bin
 curl -fsSL https://raw.githubusercontent.com/Danathar/atomic-image-builder/main/contrib/aib -o ~/.local/bin/aib
 chmod +x ~/.local/bin/aib
@@ -135,46 +136,7 @@ echo "##########################################################################
 echo ""
 }
 
-installer_ryzenadj () {
-echo "4. Installation de ryzenadj en distrobox,volontairement hors de l'OS, car provient d'un dépot tiers"
-# --- Configuration ---
-BOX_NAME="ryzenadj-rootbox"
-ALIAS_BOX_NAME="${BOX_NAME}"   # nom de la box utilisée dans l'alias final (adapter si différent)
-SHELL_RC="${HOME}/.bashrc"
-
-echo "==> Création de la distrobox root '${BOX_NAME}'"
-distrobox-create --root "${BOX_NAME}" --image registry.fedoraproject.org/fedora-toolbox:latest --yes
-
-echo "==> Installation de ryzenadj dans la distrobox (root)"
-distrobox-enter --root -n "${BOX_NAME}" -- bash -c "
-    set -euo pipefail
-    sudo dnf5 -y copr enable ublue-os/bazzite
-    sudo dnf5 install -y --setopt=install_weak_deps=False ryzenadj
-    sudo dnf5 -y copr disable ublue-os/bazzite
-"
-
-echo "==> Export du binaire ryzenadj vers l'hôte"
-distrobox-enter --root -n "${BOX_NAME}" -- distrobox-export --bin /usr/bin/ryzenadj
-
-ALIAS_LINE_LOW="alias ryzen_low='distrobox-enter --root -n ${ALIAS_BOX_NAME} -- /usr/bin/ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000'"
-ALIAS_LINE_DEFAULT="alias ryzen_default='distrobox-enter --root -n ${ALIAS_BOX_NAME} -- /usr/bin/ryzenadj --stapm-limit=25000--fast-limit=25000 --slow-limit=25000'"
-
-if grep -qF "alias ryzenadj=" "${SHELL_RC}" 2>/dev/null; then
-    echo "==> Alias 'ryzenadj' déjà présent dans ${SHELL_RC}, remplacement"
-    sed -i "\|alias ryzenadj=|d" "${SHELL_RC}"
-fi
-
-echo "==> Ajout de l'alias dans ${SHELL_RC}"
-echo "${ALIAS_LINE_LOW}" >> "${SHELL_RC}"
-echo "${ALIAS_LINE_DEFAULT}" >> "${SHELL_RC}"
-
-echo "✅ ryzenadj installé avec succès."
-echo ""
-echo "#####################################################################################"
-echo ""
-}
-
-echo 6. Installation des flatpaks
+echo 8. Installation des flatpaks
 # Nota bene : on banni le mode --user pour les flatpaks. Pour une question de sécurité : installation "systeme" pour que personne (ni un utilisateur, ni un logiciel malveillant) ne puisse altérer les outils de base. En installation mode --user, un logiciel malveillant n'a besoin d'aucun privilège particulier pour alterer le contenu d'un flatpak. De plus, l'installation en mode --user n'isole pas plus les flatpaks. En mode système, il sont dans /var/lib, et donc deja en dehors des fichiers de l'OS (aucune pollution).
 # Peut-être, n'installer que l'éditeur de texte et bazaar, ainsi que ce qu'on ne voit pas dans bazaar (mangohid, proton GE, boxtron...).
 installer_flatpaks() {
