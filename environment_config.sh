@@ -10,9 +10,8 @@ executer_logique () {
 mettre_en_place_preferences
 mettre_en_place_alias
 mettre_en_place_repo_github
-relocaliser_containers
-relocaliser_vm
 installer_llama
+installer_distrobox
 installer_brew
 installer_AIB
 installer_flatpaks                  # pour l'instant, juste les apps de base. Le reste à intégrer avec conditions selon la distribution
@@ -26,15 +25,15 @@ sudo mkdir -p /etc/firefox/policies
 sudo mkdir -p /etc/profile.d
 sudo mkdir -p /etc/profile.d/local.d
 sudo mkdir -p /etc/profile.d/profile
-file_url="https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files"
-sudo curl -sSL "$file_url/etc/firefox/policies/policies.json" -o 	"/var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json"
-sudo curl -sSL "$file_url/etc/firefox/policies/policies.json" -o	"/etc/firefox/policies/policies.json"
-sudo curl -sSL "$file_url/etc/profile.d/10-environment.sh" -o		"/etc/profile.d/10-environment.sh"
-sudo curl -sSL "$file_url/etc/dconf/db/local.d/00-defaults" -o		"/etc/dconf/db/local.d/00-defaults"
-sudo curl -sSL "$file_url/etc/dconf/profile/user" -o			"/etc/dconf/profile/user"
-curl -sSL "$file_url/etc/skel/Modèles/Fichier%20Markdown.md" -o		"$HOME/Modèles/Fichier Markdown.md"
-curl -sSL "$file_url/etc/skel/Modèles/Fichier%20texte.txt" -o		"$HOME/Modèles/Fichier Fichier texte.txt"
-curl -sSL "$file_url/etc/skel/Modèles/Script.sh" -o			"$HOME/Modèles/Script.sh"
+url="https://raw.githubusercontent.com/binnotkari-wq/post-install/main/system_files"
+sudo curl -sSL "$url/etc/firefox/policies/policies.json" -o 	"/var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json"
+sudo curl -sSL "$url/etc/firefox/policies/policies.json" -o	"/etc/firefox/policies/policies.json"
+sudo curl -sSL "$url/etc/profile.d/10-environment.sh" -o		"/etc/profile.d/10-environment.sh"
+sudo curl -sSL "$url/etc/dconf/db/local.d/00-defaults" -o		"/etc/dconf/db/local.d/00-defaults"
+sudo curl -sSL "$url/etc/dconf/profile/user" -o			"/etc/dconf/profile/user"
+curl -sSL "$url/etc/skel/Modèles/Fichier%20Markdown.md" -o		"$HOME/Modèles/Fichier Markdown.md"
+curl -sSL "$url/etc/skel/Modèles/Fichier%20texte.txt" -o		"$HOME/Modèles/Fichier Fichier texte.txt"
+curl -sSL "$url/etc/skel/Modèles/Script.sh" -o			"$HOME/Modèles/Script.sh"
 
 # Permissions des fichiers copiés depuis system_files
 sudo chmod 644 /etc/profile.d/10-environment.sh
@@ -74,33 +73,10 @@ echo "##########################################################################
 echo ""
 }
 
-relocaliser_containers () {
-echo "4. Relocaliser containers"
-sudo mkdir -p /var/data
-sudo chown -R 1000:1000 /var/data
-mkdir -p "/var/data/containers"
-ln -s -- "/var/data/containers" "$HOME/.local/share/containers"
-echo "✅ Dossier .local/share/containers relocalisé dans /var/data avec succès."
-echo ""
-echo "#####################################################################################"
-echo ""
-}
-
-relocaliser_vm () {
-echo "5. Relocaliser machines virtuelles"
-sudo mkdir -p /var/data
-sudo chown -R 1000:1000 /var/data
-mkdir -p "/var/data/org.gnome.Boxes"
-ln -s -- "/var/data/org.gnome.Boxes" "$HOME/.var/app/org.gnome.Boxes"
-echo "✅ Dossier .var/app/org.gnome.Boxes relocalisé dans /var/data avec succès."
-echo ""
-echo "#####################################################################################"
-echo ""
-}
-
-installer_llama () {
-echo "6. Installation de llama"
-curl -LsSf https://llama.app/install.sh | sh
+installer_distrobox () {
+echo "7. Installation de llama"
+# v1 (default) — latest stable
+curl -fsSL https://raw.githubusercontent.com/89luca89/distrobox/legacy/install | sh
 echo "✅ llama installé avec succès."
 echo ""
 echo "#####################################################################################"
@@ -108,7 +84,7 @@ echo ""
 }
 
 installer_brew () {
-echo 7. "Installation de Brew"
+echo 8. "Installation de Brew"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Add linuxbrew to the list of paths usable by `sudo`
@@ -141,7 +117,7 @@ echo ""
 }
 
 installer_AIB () {
-echo "8. Installation de Atomic Image Builder"
+echo "9. Installation de Atomic Image Builder (pas dispo en rpm pour distrobox)"
 mkdir -p ~/.local/bin
 curl -fsSL https://raw.githubusercontent.com/Danathar/atomic-image-builder/main/contrib/aib -o ~/.local/bin/aib
 chmod +x ~/.local/bin/aib
@@ -151,25 +127,32 @@ echo "##########################################################################
 echo ""
 }
 
-echo 9. Installation des flatpaks
+installer_llama () {
+echo "6. Installation de llama depuis Github (version vulkan pas dispo en rpm pour distrobox)"
+curl -LsSf https://llama.app/install.sh | sh
+echo "✅ llama installé avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
+}
+
+echo 10. Installation des flatpaks
 # Nota bene : on banni le mode --user pour les flatpaks. Pour une question de sécurité : installation "systeme" pour que personne (ni un utilisateur, ni un logiciel malveillant) ne puisse altérer les outils de base. En installation mode --user, un logiciel malveillant n'a besoin d'aucun privilège particulier pour alterer le contenu d'un flatpak. De plus, l'installation en mode --user n'isole pas plus les flatpaks. En mode système, il sont dans /var/lib, et donc deja en dehors des fichiers de l'OS (aucune pollution).
-# Peut-être, n'installer que l'éditeur de texte et bazaar, ainsi que ce qu'on ne voit pas dans bazaar (mangohid, proton GE, boxtron...).
+# Pour l'instant, installation automatique de l'éditeur de texte, Bazaar et Suchi (preview Nautilus) uniquement.
 installer_flatpaks() {
-  flatpak remote-add --system --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-  flatpak remote-modify --no-filter --enable flathub
-  flatpak update -y
 
   BASE_FLATPAKS=(
   "io.github.kolunmi.Bazaar"
   "org.gnome.TextEditor"
+  "org.gnome.NautilusPreviewer"
   )
   flatpak install -y flathub "${BASE_FLATPAKS[@]}"
 
   APPS_EXCLUSIVES_ATOMIC=(
-    # Application à installer, ou déjà installée, en natif sur Nixos
+    # Application à installer en natif sur Nixos
     "io.github.ilya_zlobintsev.LACT"
-    "io.github.qwersyk.Newelle"
+    # "io.github.qwersyk.Newelle"
     # "org.gnome.Extensions"
   )
   if grep -qE "silverblue|kinoite|bazzite" /etc/os-release 2>/dev/null; then
@@ -178,37 +161,6 @@ installer_flatpaks() {
 
   echo "Nettoyage des résidus éventuels"
   flatpak uninstall --unused
-}
-
-masquer_autostarts_gnome () {
-  echo "7. Masquage des applications lancées à l'ouverture de session"
-  mkdir -p ~/.config/autostart
-
-  # Liste des services et application à masquer
-  services=(
-    "steam.desktop"
-    "vboxclient.desktop"
-    "vmware-user.desktop"
-    "spice-vdagent"
-    "orca-autostart.desktop"
-    "org.gnome.Evolution-alarm-notify.desktop"
-    "bazzite-announcement.desktop"
-  )
-
-  # Boucle pour créer les fichiers "Hidden=true"
-  for service in "${services[@]}"; do
-    echo "[Desktop Entry]
-  Type=Application
-  Name=$service
-  Exec=/bin/true
-  Hidden=true" > ~/.config/autostart/"$service"
-  done
-
-echo "✅ Flatpaks installés avec succès."
-echo ""
-echo "#####################################################################################"
-echo ""
-
 }
 
 executer_logique "$@"

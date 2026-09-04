@@ -69,6 +69,7 @@ executer_logique() {
 # FONCTIONS
 #===================================================
 
+# c'était quoi le problème ?
 corriger_wifi() {
 sudo tee /etc/NetworkManager/conf.d/wifi-powersave.conf << EOF
 [connection]
@@ -78,6 +79,7 @@ EOF
 sudo systemctl restart NetworkManager
 }
 
+# OK dans OS config
 supprimer_repo_fedora() {
   if [ ! -f /var/tmp/logs_script_atomic/1.1_supprimer_repo_fedora_OK.txt ]; then
     echo "Nettoyage des flatpaks Fedora (system-wide)"
@@ -93,12 +95,14 @@ supprimer_repo_fedora() {
   fi
 }
 
+# OK dans OS config
 updater_firmwares() {
   sudo fwupdmgr refresh
   sudo fwupdmgr get-updates
   sudo fwupdmgr update
 }
 
+# pas utile puisqu'on n'y touche pas
 sauvegarder_fstab() {
   if [ ! -f /var/tmp/logs_script_atomic/1.2_sauvegarder_fstab_OK.txt ]; then
       sudo cp /etc/fstab /etc/fstab.bak
@@ -108,6 +112,7 @@ sauvegarder_fstab() {
   fi
 }
 
+# Inutile (pseudo système "intelligent" pour choisir le mode de compression btrfs selon les capacités du CPU....bof)
 detecter_nb_coeurs_CPU() {
   # Détection du CPU pour le niveau de compression
   THREADS=$(nproc)
@@ -118,6 +123,7 @@ detecter_nb_coeurs_CPU() {
   fi
 }
 
+# inutile : la seule facon de mettre en place la compression, c'est avec les KARGS, car les option de montage de / dans /etc/fstab sont ignorée du fait de OSTREE / composefs
 adapter_fstab() {
   if [ ! -f /var/tmp/logs_script_atomic/1.3_adapter_fstab_OK.txt ]; then
     # Ajout de l'option de base si absente, en se basant sur la colonne 'btrfs'
@@ -131,6 +137,7 @@ adapter_fstab() {
   fi
 }
 
+# OK dans OS config
 adapter_KARGS() {
   if [ ! -f /var/tmp/logs_script_atomic/1.4_adapter_KARGS_OK.txt ]; then
     # On vérifie si compress-force est déjà présent pour éviter les doublons
@@ -143,6 +150,7 @@ adapter_KARGS() {
   fi
 }
 
+# OK dans OS config
 optimiser_zram() {
   if [ ! -f /var/tmp/logs_script_atomic/1.5_optimiser_zram_OK.txt ]; then
     # 1. Détection de la RAM totale en Go
