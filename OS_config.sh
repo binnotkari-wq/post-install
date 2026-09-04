@@ -9,38 +9,88 @@
 
 set -oue pipefail
 
-echo "1. Mise en place compression BTRFS"
-# Explications https://github.com/ublue-os/bazzite/issues/3602
-# I believe this is an upstream issue with Fedora Atomic: https://discussion.fedoraproject.org/t/talk-mount-options-are-ignored-in-fedora-atomic-desktops-42/148874/22
-# To fix it, you need to add compression to the kernel arguments with rpm-ostree (and reboot to this new deployment): sudo rpm-ostree kargs --delete=rootflags=subvol=root --append=rootflags=subvol=root,compress-force=zstd:1
-# Then run disk compression manually to compress all existing files, as only new files will be compressed otherwise: sudo btrfs filesystem defragment -r -v -czstd /var/home
-# Toutes les distributions basées sur fedora atomic ont ce défaut : https://gitlab.com/fedora/ostree/sig/-/work_items/72
-# Et à chaque fois la solution recommandée est un rpm-ostree kargs
+executer_logique () {
+  updater_firmwares
+  supprimer_flatpak_fedora
+  optimiser_OS
+  masquer_autostarts_gnome
+  installer_paquets_systeme
+  redemarrer
+}
 
-if compress-force=zstd:3 présent dans /etc/fstab
-    "✅ Compression BTRFS compress-force=zstd:3 déjà en place."
-else 
-    # /etc/fstab est ignoré, seule le kargs fonctionne.
-    sudo rpm-ostree kargs --delete="rootflags=subvol=root" --append="rootflags=subvol=root,compress-force=zstd:3"
+updater_firmwares() {
+  echo "==> Mise à jour des firmwares"
+  sudo fwupdmgr refresh
+  sudo fwupdmgr get-updates
+  sudo fwupdmgr update
+  echo "✅ Firmwares à jour."
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
 
-    # /etc/fstab est ignoré après l'installation, et ne semble servir qu'aux montages de anaconda lors de l'installation. Mais pour rester cohérent, on spécifie quand même la compression.
-    sudo sed -i 's/compress=zstd:3/compress-force=zstd:3/' /etc/fstab
+supprimer_flatpak_fedora() {
+  echo "==> Nettoyage des flatpaks Fedora (system-wide)"
+  if cat /var/lib/flatpak/repo/config | grep -q "https://registry.fedoraproject.org"; then
+    sudo flatpak pin --remove $(flatpak list --system --columns=ref | grep "fedoraproject") 2>/dev/null || true
+    sudo flatpak pin --remove runtime/org.fedoraproject.Platform.GL.default/x86_64/f44 || true
+    sudo flatpak pin --remove runtime/org.fedoraproject.Platform/x86_64/f44 || true
+    sudo flatpak uninstall -y $(flatpak list --columns=application,origin | grep -i 'fedora' | awk '{print $1}') 2>/dev/null || true
+    sudo flatpak remote-delete --force fedora 2>/dev/null || true
+    sudo flatpak remote-delete --force fedora-testing 2>/dev/null || true
+    sudo flatpak uninstall --unused
+    sudo rm -rf /var/lib/flatpak/.removed/*
+    echo "✅ Flatpaks Fedora supprimés avec succès."
+  else
+    echo "✅ Flatpaks et repo Fedora déjà supprimés"
+  fi
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
 
-    # également, marquer directement la compression dans les propriété btrfs de chaque volume (ne fonctionne pas sur / ou /sysroot qui sont en lecteure seul ou composefs)
-    sudo btrfs property set /var/home compression zstd
-    sudo btrfs property set /var/lib/flatpak compression zstd
-    sudo btrfs property set /var/lib/containers compression zstd
-    sudo btrfs property set /var/cargo compression zstd
-    # NB ces points de montages doivent avoir été affectés à chacun de ces sous-volumes et disques
-    echo "✅ Compression BTRFS mise en place avec succès."
-fi
+optimiser_OS () {
+  echo "==> Mise en place compression BTRFS"
+  echo "Karg : compression btrfs zstd:1 (composefs ne prenant pas en compte l'intégralité de /etc/fstab - valade pour toutes les Fedora Atomic et autres dérivés bootc)"
+  echo "https://gitlab.com/fedora/ostree/sig/-/work_items/72"
+  if ! rpm-ostree kargs | grep -q 'compress=zstd:1'; then
+      sudo rpm-ostree kargs --delete="rootflags=subvol=root" --append="rootflags=subvol=root,compress=zstd:1"
+      REBOOT_NEEDED=1
+      echo "✅ Compression BTRFS mise en place avec succès."
+  else
+      echo "✅ Compression BTRFS déjà en place."
+  fi
 
-echo ""
-echo "#####################################################################################"
-echo ""
+  echo "==> Chargement du module NTSYNC au démarrage"
+  echo "ntsync" > /usr/lib/modules-load.d/ntsync.conf
 
+  echo "==> paramétrage de la ZRAM"
+  sudo mkdir -p /etc/systemd/zram-generator.conf.d
+cat <<'EOF' | sudo tee /etc/systemd/zram-generator.conf.d/zram-generator_custom.conf
+[zram0]
+zram-size = ram * 1.5
+compression-algorithm = zstd
+swap-priority = 100
+EOF
 
-echo "2. Desactivation des services et démarrages automatiques"
+  echo "==> paramétrage de la mémoire virtuelle"
+cat <<'EOF' | sudo tee /etc/sysctl.d/99-vm-zram-parameters.conf > /dev/null
+vm.swappiness = 180
+vm.watermark_boost_factor = 0
+vm.watermark_scale_factor = 125
+vm.page-cluster = 0
+vm.max_map_count=1048576
+EOF
+
+  sudo sysctl --system > /dev/null
+
+  echo "✅ Optimisations appliquées avec succès."
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
+
+echo "==> Desactivation des services et démarrages automatiques"
 
 # https://claude.ai/chat/e6f562df-2a15-4c9a-b0d1-af616df78281
 ### Services système : désactivation classique
@@ -90,3 +140,63 @@ echo "✅ Services désactivés avec succès."
 echo ""
 echo "#####################################################################################"
 echo ""
+
+masquer_autostarts_gnome () {
+  echo "==> 7. Masquage des applications lancées à l'ouverture de session"
+  mkdir -p ~/.config/autostart
+
+  # Liste des services et application à masquer
+  services=(
+    "steam.desktop"
+    "vboxclient.desktop"
+    "vmware-user.desktop"
+    "spice-vdagent"
+    "orca-autostart.desktop"
+    "org.gnome.Evolution-alarm-notify.desktop"
+    "bazzite-announcement.desktop"
+  )
+
+  # Boucle pour créer les fichiers "Hidden=true"
+  for service in "${services[@]}"; do
+    echo "[Desktop Entry]
+  Type=Application
+  Name=$service
+  Exec=/bin/true
+  Hidden=true" > ~/.config/autostart/"$service"
+  done
+
+  echo "✅ Flatpaks installés avec succès."
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
+
+installer_paquets_systeme () {
+  echo "==> Layering rpm-ostree (paquets liés au hardware/session hôte)"
+  NEEDED_PKGS=(gamescope zenity)
+  TO_INSTALL=()
+  for pkg in "${NEEDED_PKGS[@]}"; do
+      if ! rpm -q --quiet "$pkg"; then
+          TO_INSTALL+=("$pkg")
+      else
+          echo "  - $pkg déjà installé, skip"
+      fi
+  done
+  if ((${#TO_INSTALL[@]})); then
+      sudo rpm-ostree install --idempotent "${TO_INSTALL[@]}"
+      REBOOT_NEEDED=1
+  fi
+  echo "✅ Paquets système installés avec succès."
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
+
+redemarrer () {
+  echo "==> Terminé."
+  if [[ "${REBOOT_NEEDED:-0}" == "1" ]]; then
+      echo "Un reboot est nécessaire (layering rpm-ostree et/ou karg appliqués au prochain déploiement)."
+  fi
+}
+
+executer_logique "$@"
