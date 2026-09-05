@@ -7,6 +7,7 @@
 set -oue pipefail
 
 executer_logique () {
+  arreter_maj_automatiques
   mettre_a_jour_firmwares
   limiter_journaux
   supprimer_flatpak_fedora
@@ -20,6 +21,53 @@ executer_logique () {
   redemarrer
 }
 
+# Arrête et désactive temporairement rpm-ostreed-automatic.timer (le timer systemd qui, sur
+# Silverblue, vérifie et met en scène ("stage") les mises à jour peu après le boot — c'est lui,
+# pas GNOME Software, qui pilote la mise à jour automatique en arrière-plan). Sur une
+# installation fraîche, ce timer peut se déclencher pendant l'exécution du script et entrer
+# en conflit avec les opérations rpm-ostree du script (kargs, install), ou pire, écrire des
+# données AVANT que la compression BTRFS ne soit activée par injecter_KARGS_compression_btrfs.
+# On annule aussi toute transaction déjà en cours pour repartir sur une base saine.
+#
+# La réactivation (reactiver_maj_automatiques) est déclenchée via un trap EXIT plutôt qu'un
+# appel explicite en fin de script : ainsi, même si le script échoue ou est interrompu
+# (Ctrl+C, erreur sous set -e) à n'importe quelle étape après cet arrêt, le timer est
+# systématiquement remis en route — le système n'est jamais laissé avec les mises à jour
+# automatiques désactivées suite à un échec du script.
+#
+# Note : rpm-ostreed-automatic.timer n'est pas la seule source de transactions automatiques.
+# GNOME Software effectue sa propre vérification en arrière-plan depuis la session graphique
+# (via D-Bus, indépendamment de ce timer systemd) et peut relancer une transaction "upgrade"
+# à tout moment pendant le script. On coupe donc aussi son paramètre d'auto-vérification et on
+# termine le process en cours, pour réduire le risque qu'une nouvelle transaction démarre
+# entre cet arrêt initial et les étapes rpm-ostree plus tardives du script (kargs, install).
+arreter_maj_automatiques () {
+  echo "==> Arrêt des mises à jour automatiques rpm-ostree pour la durée du script"
+  sudo rpm-ostree cancel 2>/dev/null || true
+  sudo systemctl stop rpm-ostreed-automatic.timer rpm-ostreed-automatic.service 2>/dev/null || true
+  sudo systemctl disable rpm-ostreed-automatic.timer 2>/dev/null || true
+  gsettings set org.gnome.software download-updates false 2>/dev/null || true
+  gsettings set org.gnome.software download-updates-notify false 2>/dev/null || true
+  pkill -x gnome-software 2>/dev/null || true
+  trap reactiver_maj_automatiques EXIT
+  echo "✅ Mises à jour automatiques stoppées le temps du script."
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
+
+# Réactive rpm-ostreed-automatic.timer, pour revenir au comportement par défaut du système
+# (vérification/mise en scène périodique des mises à jour). Appelée automatiquement par le
+# trap EXIT posé dans arreter_maj_automatiques, quelle que soit l'issue du script.
+reactiver_maj_automatiques () {
+  echo "==> Réactivation des mises à jour automatiques rpm-ostree"
+  sudo systemctl enable --now rpm-ostreed-automatic.timer 2>/dev/null || true
+  echo "✅ Mises à jour automatiques réactivées."
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
+
 # Sauvegarde un fichier existant en fichier.ext.backup avant modification (schéma A/B, à l'image
 # des rootfs A/B des distributions atomiques : une version courante, une version précédente
 # garantie fonctionnelle). Le backup est écrasé à chaque exécution : il ne conserve donc que
@@ -30,7 +78,7 @@ executer_logique () {
 backup_fichier () {
   local fichier="$1"
   local besoin_sudo="${2:-}"
- 
+
   if [[ "$besoin_sudo" == "sudo" ]]; then
     if sudo test -f "$fichier"; then
       sudo cp -a "$fichier" "${fichier}.backup"
@@ -46,9 +94,12 @@ backup_fichier () {
 
 mettre_a_jour_firmwares() {
   echo "==> Mise à jour des firmwares."
-  # sudo fwupdmgr refresh
-  # sudo fwupdmgr get-updates
-  # sudo fwupdmgr update
+  # fwupdmgr retourne un code de sortie non-nul dès qu'il n'y a rien à faire
+  # (pas de mise à jour disponible) : comportement normal, pas une erreur.
+  # Le || true évite que set -e n'interrompe le script dans ce cas.
+  sudo fwupdmgr refresh || true
+  sudo fwupdmgr get-updates || true
+  sudo fwupdmgr update || true
   echo "✅ Firmwares à jour."
   echo ""
   echo "#####################################################################################"
@@ -84,7 +135,6 @@ supprimer_flatpak_fedora() {
   echo ""
   echo "#####################################################################################"
   echo ""
-
 }
 
 injecter_KARGS_compression_btrfs () {
@@ -92,6 +142,7 @@ injecter_KARGS_compression_btrfs () {
   echo "Karg : compression btrfs zstd:1 (composefs ne prenant pas en compte l'intégralité de /etc/fstab - valade pour toutes les Fedora Atomic et autres dérivés bootc)"
   echo "https://gitlab.com/fedora/ostree/sig/-/work_items/72"
   if ! rpm-ostree kargs | grep -q 'compress=zstd:1'; then
+      sudo rpm-ostree cancel 2>/dev/null || true
       sudo rpm-ostree kargs --delete="rootflags=subvol=root" --append="rootflags=subvol=root,compress=zstd:1"
       REBOOT_NEEDED=1
       echo "✅ Compression BTRFS mise en place avec succès."
@@ -106,7 +157,7 @@ injecter_KARGS_compression_btrfs () {
 charger_module_ntsync () {
   echo "==> Chargement du module NTSYNC au démarrage"
   backup_fichier /etc/modules-load.d/ntsync.conf sudo
-  echo "ntsync" | sudo tee /etc/modules-load.d/ntsync.conf sudo
+  echo "ntsync" | sudo tee /etc/modules-load.d/ntsync.conf
   echo "✅ Module NTSYNC chargé."
   echo ""
   echo "#####################################################################################"
@@ -149,6 +200,10 @@ EOF
 desactiver_service () {
   echo "==> Desactivation des services et démarrages automatiques"
   # https://claude.ai/chat/e6f562df-2a15-4c9a-b0d1-af616df78281
+  # Note : cette liste mélange des unités génériques et des unités spécifiques à certaines
+  # variantes (ex. Bazzite). Sur une cible où une unité n'existe pas, systemctl retourne un
+  # code non-nul pour TOUTE la commande (pas seulement l'unité concernée) : le || true évite
+  # que set -e n'interrompe le script, sans empêcher la désactivation des unités qui existent.
   ### Services système : désactivation classique
   sudo systemctl disable \
     NetworkManager-wait-online.service \
@@ -166,18 +221,18 @@ desactiver_service () {
     virtvboxd.service \
     geoclue.service \
     sssd-kcm.service gssproxy.service \
-    pcscd.service
+    pcscd.service || true
 
   ### Services utilisateur
   systemctl --user disable \
-    tfs-nag.service
+    tfs-nag.service || true
 
   ### Services système : masquage (statique ou activation par socket/dbus)
   sudo systemctl mask \
     geoclue.service \
     gssproxy.service \
     sssd-kcm.service sssd-kcm.socket \
-    pcscd.service pcscd.socket
+    pcscd.service pcscd.socket || true
 
   ### Services utilisateur (--global : pour toute session utilisateur existante et à créer)
   sudo systemctl --global mask \
@@ -189,7 +244,7 @@ desactiver_service () {
     org.gnome.SettingsDaemon.Smartcard.service \
     org.gnome.SettingsDaemon.Smartcard.target \
     org.gnome.SettingsDaemon.Wwan.service \
-    org.gnome.SettingsDaemon.Wwan.target
+    org.gnome.SettingsDaemon.Wwan.target || true
 
   echo "✅ Services désactivés avec succès."
   echo ""
@@ -241,6 +296,7 @@ installer_paquets_systeme () {
       fi
   done
   if ((${#TO_INSTALL[@]})); then
+      sudo rpm-ostree cancel 2>/dev/null || true
       sudo rpm-ostree install --idempotent "${TO_INSTALL[@]}"
       REBOOT_NEEDED=1
       echo "✅ Paquets système installés avec succès."
@@ -253,7 +309,12 @@ installer_paquets_systeme () {
 redemarrer () {
   echo "==> Terminé."
   if [[ "${REBOOT_NEEDED:-0}" == "1" ]]; then
-      echo "Un reboot est nécessaire (layering rpm-ostree et/ou karg appliqués au prochain déploiement)."
+      echo "Un redémarrage est nécessaire (layering rpm-ostree et/ou karg appliqués au prochain déploiement)."
+      echo "Redémarrage dans 10 secondes (Ctrl+C pour annuler)..."
+      sleep 10
+      sudo systemctl reboot
+  else
+      echo "Aucun redémarrage nécessaire."
   fi
 }
 
