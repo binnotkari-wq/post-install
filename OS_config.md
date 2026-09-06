@@ -18,7 +18,8 @@
   - [4.7. Paramétrage de la mémoire virtuelle](#47-paramétrage-de-la-mémoire-virtuelle)
   - [4.8. Désactivation de services et masquage d'autostarts](#48-désactivation-de-services-et-masquage-dautostarts)
   - [4.9. Installation de paquets système (layering rpm-ostree)](#49-installation-de-paquets-système-layering-rpm-ostree)
-  - [4.10. Redémarrage final](#410-redémarrage-final)
+  - [4.10. Correctif Plymouth/amdgpu (GPU AMD Vega intégré)](#410-correctif-plymouthamdgpu-gpu-amd-vega-intégré)
+  - [4.11. Redémarrage final](#411-redémarrage-final)
 - [5. Fonctions utilitaires transverses](#5-fonctions-utilitaires-transverses)
 - [6. Limites connues et compromis assumés](#6-limites-connues-et-compromis-assumés)
 - [7. Utilisation](#7-utilisation)
@@ -39,6 +40,8 @@ L'alternative aurait été de construire une **image bootc custom** (rebuild com
 
 En échange, on renonce à certaines optimisations profondes qu'une image custom permettrait (ex : suppression de paquets à la compilation plutôt qu'a posteriori). C'est un compromis assumé : ce script vise le **système immuable mais personnalisé "as intended"**, pas le système sur-mesure à la Bazzite/UBlue.
 
+Le script n'est cependant pas totalement à l'abri des aléas d'une mise à jour Fedora "officielle" : voir [4.10](#410-correctif-plymouthamdgpu-gpu-amd-vega-intégré) pour un cas concret où une mise à jour majeure de kernel a introduit une régression nécessitant un correctif applicatif après coup — la promesse du "as intended" n'exclut pas d'avoir, occasionnellement, à corriger un comportement cassé par Fedora lui-même.
+
 ## 2. Principes de conception
 
 Trois principes structurent l'ensemble du script, discutés et affinés au fil de son développement.
@@ -49,7 +52,7 @@ Le script doit pouvoir être relancé plusieurs fois sans dommage ni comportemen
 
 - **Par écrasement plutôt qu'accumulation** : toutes les écritures de fichiers de configuration utilisent une redirection qui **remplace** le contenu (`tee`, `>`), jamais une redirection qui **ajoute** (`>>`). Relancer le script réécrit le même contenu, sans dupliquer de lignes.
 - **Par tolérance native de l'outil appelé** : `systemctl disable`/`mask` sur une unité déjà désactivée/masquée ne provoque pas d'erreur bloquante ; `flatpak uninstall --unused` ne fait rien s'il n'y a rien à faire ; `mkdir -p` ne râle jamais si le dossier existe déjà.
-- **Par vérification explicite, quand ni l'un ni l'autre ne suffit** : deux fonctions ont besoin d'une garde explicite, car l'opération sous-jacente n'est pas naturellement idempotente ou serait coûteuse à répéter inutilement.
+- **Par vérification explicite, quand ni l'un ni l'autre ne suffit** : plusieurs fonctions ont besoin d'une garde explicite, car l'opération sous-jacente n'est pas naturellement idempotente ou serait coûteuse à répéter inutilement.
 
 Exemple dans `injecter_KARGS_compression_btrfs` :
 
@@ -75,6 +78,8 @@ for pkg in "${NEEDED_PKGS[@]}"; do
     fi
 done
 ```
+
+`parametrer_plymouth_amdgpu_vega` ([4.10](#410-correctif-plymouthamdgpu-gpu-amd-vega-intégré)) pousse cette garde un cran plus loin : au-delà de vérifier si les fichiers de configuration sont déjà en place, elle évite de déclencher la régénération d'initramfs — l'opération la plus coûteuse de toute la fonction — si aucun des deux fichiers concernés n'a effectivement changé.
 
 ### 2.2. Sauvegarde avant modification (schéma A/B)
 
@@ -168,7 +173,7 @@ arreter_maj_automatiques () {
 }
 ```
 
-En complément (et non en remplacement — un `cancel` immédiat, pas une boucle d'attente), un second `rpm-ostree cancel` défensif est placé juste avant chaque opération rpm-ostree mutante du script (`kargs`, `install`), pour parer une transaction qui aurait pu être relancée dans l'intervalle :
+En complément (et non en remplacement — un `cancel` immédiat, pas une boucle d'attente), un second `rpm-ostree cancel` défensif est placé juste avant chaque opération rpm-ostree mutante du script (`kargs`, `install`, régénération d'initramfs), pour parer une transaction qui aurait pu être relancée dans l'intervalle :
 
 ```bash
 sudo rpm-ostree cancel 2>/dev/null || true
@@ -200,6 +205,7 @@ executer_logique () {
   desactiver_service
   masquer_autostarts_gnome
   installer_paquets_systeme
+  parametrer_plymouth_amdgpu_vega
   redemarrer
 }
 ```
@@ -344,9 +350,60 @@ fi
 
 Cette opération nécessite un redéploiement (donc un redémarrage) pour prendre effet — d'où `REBOOT_NEEDED=1`.
 
-### 4.10. Redémarrage final
+### 4.10. Correctif Plymouth/amdgpu (GPU AMD Vega intégré)
 
-Le layering rpm-ostree et l'ajout du karg de compression BTRFS ne sont effectifs qu'après un redémarrage (nouveau déploiement). Le script part de l'hypothèse qu'un redémarrage aura lieu immédiatement après son exécution, et le déclenche donc lui-même — avec un court délai annulable :
+Fonction ajoutée après coup, suite à une régression apparue sur le Dell 5485 (GPU AMD Picasso/Vega 8 intégré) après une mise à jour majeure de kernel (`6.19.10` → `7.1.13`, accompagnée d'un saut équivalent de `linux-firmware`, `mesa` et `libdrm`) : le splash graphique Plymouth (thème `bgrt`) cesse de s'afficher au prompt de saisie du mot de passe LUKS, remplacé par une invite texte.
+
+**Diagnostic (long, résumé ici)** : plusieurs fausses pistes ont été explorées avant d'isoler la cause réelle — driver `amdgpu` absent de l'initramfs (écartée), race condition entre l'initialisation GPU et le prompt cryptsetup (kernel arg `initramfs_async=0` testé, sans effet). La cause s'est avérée double :
+
+1. **Côté Plymouth** : un changement de comportement upstream ("Don't use simpledrm together with LUKS") nécessite `UseSimpledrm=1` dans `/etc/plymouth/plymouthd.conf` pour retrouver l'affichage bgrt au prompt LUKS.
+2. **Côté rpm-ostree** : le mécanisme `rpm-ostree initramfs-etc --track=`, utilisé par ailleurs pour d'autres fichiers dans ce projet (voir le projet `fedora_custom-bootc` pour le cas `amdgpu-early.conf`), **ne régénère pas réellement l'initramfs en mode générique** (`--no-hostonly`, celui de Silverblue) — bug confirmé côté dracut-ng (le module plymouth de dracut ignore les overrides `/etc` hors mode hostonly). Le statut `rpm-ostree status` affiche pourtant le fichier comme suivi (`InitramfsEtc:`), ce qui masque le problème. Seule méthode fiable constatée : forcer l'inclusion via le flag dracut `-I`, comme suggéré par le message d'erreur rencontré au passage (`initramfs regeneration and /etc overlay not compatible; use dracut arg -I instead`).
+
+```bash
+parametrer_plymouth_amdgpu_vega () {
+  echo "==> Correctif Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8)"
+
+  local reponse
+  read -r -p "  Cette machine a-t-elle un GPU AMD Vega intégré (ex: Dell 5485) ? [o/N] " reponse
+  case "${reponse,,}" in
+    o|oui|y|yes) ;;
+    *)
+      echo "  ↳ Ignoré (pas concerné par ce correctif)."
+      return 0
+      ;;
+  esac
+  ...
+}
+```
+
+**Pourquoi une question interactive, et non une détection automatique du matériel** : ce correctif n'a de sens que pour cette famille de GPU précise. Une détection automatique (`lspci`, `glxinfo`) aurait été possible, mais la question interactive a été préférée pour rester dans l'esprit "conservateur" du reste du script — le correctif touche à l'initramfs, une zone sensible, et une confirmation explicite de l'opérateur limite le risque d'application non désirée sur une machine qui ne serait pas encore équipée du GPU visé au moment de l'exécution, ou sur une machine dont le matériel serait mal identifié par une heuristique automatique. C'est la seule étape du script à interrompre son exécution pour poser une question — un choix délibéré, réservé aux correctifs dont l'applicabilité ne peut pas être déduite de façon fiable et peu coûteuse depuis le script lui-même.
+
+Idempotence assurée à deux niveaux, comme décrit en [2.1](#21-idempotence) :
+- Les deux fichiers concernés (`/etc/dracut.conf.d/amdgpu-early.conf`, `/etc/plymouth/plymouthd.conf`) ne sont réécrits que si leur contenu actuel ne correspond pas déjà à l'état attendu.
+- La régénération d'initramfs (l'opération coûteuse) n'est déclenchée que si au moins un des deux fichiers a effectivement été modifié lors de cet appel.
+
+```bash
+if ((besoin_regen)); then
+    for f in "${DRACUT_CONF}" "${PLYMOUTH_CONF}"; do
+        if rpm-ostree status | grep -q "${f}"; then
+            sudo rpm-ostree initramfs-etc --untrack="${f}" 2>/dev/null || true
+        fi
+    done
+    sudo rpm-ostree cancel 2>/dev/null || true
+    sudo rpm-ostree initramfs --enable \
+        --arg=-I --arg="${DRACUT_CONF}" \
+        --arg=-I --arg="${PLYMOUTH_CONF}"
+    REBOOT_NEEDED=1
+fi
+```
+
+L'`--untrack` défensif en amont retire tout suivi résiduel via le mécanisme non fiable, pour éviter que les deux approches ne cohabitent silencieusement sur un même déploiement.
+
+Documentation détaillée de l'investigation complète (logs, commandes de diagnostic, fausses pistes) : `fix-plymouth-amdgpu.md`, dans le même dossier que ce script.
+
+### 4.11. Redémarrage final
+
+Le layering rpm-ostree, l'ajout du karg de compression BTRFS, et une éventuelle régénération d'initramfs par `parametrer_plymouth_amdgpu_vega` ne sont effectifs qu'après un redémarrage (nouveau déploiement). Le script part de l'hypothèse qu'un redémarrage aura lieu immédiatement après son exécution, et le déclenche donc lui-même — avec un court délai annulable :
 
 ```bash
 redemarrer () {
@@ -362,7 +419,7 @@ redemarrer () {
 }
 ```
 
-`REBOOT_NEEDED` n'est positionné que par les deux étapes qui en ont réellement besoin ([4.4](#44-compression-btrfs-via-karg) et [4.9](#49-installation-de-paquets-système-layering-rpm-ostree)) — si le script est relancé alors que ces deux points sont déjà en place (cas idempotent), aucun redémarrage n'est déclenché.
+`REBOOT_NEEDED` n'est positionné que par les étapes qui en ont réellement besoin ([4.4](#44-compression-btrfs-via-karg), [4.9](#49-installation-de-paquets-système-layering-rpm-ostree) et [4.10](#410-correctif-plymouthamdgpu-gpu-amd-vega-intégré)) — si le script est relancé alors que ces points sont déjà en place (cas idempotent), aucun redémarrage n'est déclenché.
 
 ## 5. Fonctions utilitaires transverses
 
@@ -375,10 +432,11 @@ redemarrer () {
 ## 6. Limites connues et compromis assumés
 
 - **Réactivation des mises à jour automatiques** : repose sur un `trap EXIT`, qui couvre les sorties normales du shell, les erreurs `set -e`, et les interruptions signal (Ctrl+C). Un arrêt plus brutal du système (perte d'alimentation, `kill -9` du processus) pendant la fenêtre où les mises à jour sont désactivées laisserait le système dans cet état — scénario jugé suffisamment rare pour ne pas justifier de mécanisme supplémentaire (ex : service de garde externe).
-- **`rpm-ostree cancel` défensif, pas une attente** : le script annule une transaction en cours juste avant `kargs`/`install`, mais ne boucle pas en attente d'une disponibilité garantie. Il subsiste une fenêtre théorique (de l'ordre de la milliseconde) entre ce `cancel` et la commande suivante, où une nouvelle transaction pourrait en théorie redémarrer. Ce choix est délibéré : la priorité est d'éviter toute écriture disque non compressée pendant l'exécution du script, pas de garantir un taux de succès de 100 % au prix d'une attente.
+- **`rpm-ostree cancel` défensif, pas une attente** : le script annule une transaction en cours juste avant `kargs`/`install`/régénération d'initramfs, mais ne boucle pas en attente d'une disponibilité garantie. Il subsiste une fenêtre théorique (de l'ordre de la milliseconde) entre ce `cancel` et la commande suivante, où une nouvelle transaction pourrait en théorie redémarrer. Ce choix est délibéré : la priorité est d'éviter toute écriture disque non compressée pendant l'exécution du script, pas de garantir un taux de succès de 100 % au prix d'une attente.
 - **`pkill -x gnome-software`** suppose que le nom du processus est exactement `gnome-software` ; à vérifier si le comportement venait à changer sur une version future de Fedora.
 - **`|| true` sur les blocs `systemctl disable`/`mask`** masque toute défaillance de la commande, pas seulement le cas "unité inexistante" attendu. Une vraie erreur de syntaxe ou de permission sur ces lignes passerait donc silencieusement inaperçue.
 - **Backup sans historique** : relancer le script écrase le `.backup` précédent — voir [2.2](#22-sauvegarde-avant-modification-schéma-ab). Si un historique multi-versions devient nécessaire un jour, ce mécanisme devra être revu (horodatage, ou nombre de générations à conserver).
+- **Correctif Plymouth/amdgpu spécifique à un GPU** ([4.10](#410-correctif-plymouthamdgpu-gpu-amd-vega-intégré)) : gardé par une question interactive plutôt qu'une détection automatique du matériel — voir la justification dans cette section. Si le parc de machines venait à inclure plusieurs familles de GPU nécessitant chacune un correctif différent, cette approche par question isolée devra probablement évoluer vers une détection ou un menu plus structuré.
 
 ## 7. Utilisation
 
@@ -387,4 +445,4 @@ chmod +x OS_config.sh
 ./OS_config.sh
 ```
 
-Le script demande les droits `sudo` au fil de son exécution (pas de `sudo` global en tête de script). Un redémarrage est déclenché automatiquement à la fin si nécessaire (voir [4.10](#410-redémarrage-final)) — s'assurer qu'aucun travail non sauvegardé n'est en cours avant de le lancer.
+Le script demande les droits `sudo` au fil de son exécution (pas de `sudo` global en tête de script), et pose une question interactive lors de l'étape [4.10](#410-correctif-plymouthamdgpu-gpu-amd-vega-intégré) (répondre `o` uniquement sur une machine à GPU AMD Vega intégré concernée par la régression). Un redémarrage est déclenché automatiquement à la fin si nécessaire (voir [4.11](#411-redémarrage-final)) — s'assurer qu'aucun travail non sauvegardé n'est en cours avant de le lancer.

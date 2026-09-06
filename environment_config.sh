@@ -14,8 +14,7 @@ installer_llama
 installer_distrobox
 installer_brew
 installer_AIB
-installer_flatpaks                  # pour l'instant, juste les apps de base. Le reste à intégrer avec conditions selon la distribution
-masquer_autostarts_gnome
+installer_flatpaks
 }
 
 mettre_en_place_preferences () {
