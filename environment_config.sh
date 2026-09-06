@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# faire idempotence
+# faire sauvegarde des fichiers existants modifiés
+
 #####################################################################################
 # Kit de post installation, mise en place environnement. Aucune donnée personnelle. #
 #####################################################################################
@@ -10,11 +13,13 @@ executer_logique () {
 mettre_en_place_preferences
 mettre_en_place_alias
 mettre_en_place_repo_github
-installer_llama
-installer_distrobox
 installer_brew
-installer_AIB
 installer_flatpaks
+installer_llama
+installer_AIB
+installer_distrobox
+creer_distrobox_fedora-tools
+telecharger_llm
 }
 
 mettre_en_place_preferences () {
@@ -72,16 +77,6 @@ echo "##########################################################################
 echo ""
 }
 
-installer_distrobox () {
-echo "7. Installation de llama"
-# v1 (default) — latest stable
-curl -fsSL https://raw.githubusercontent.com/89luca89/distrobox/legacy/install | sh
-echo "✅ llama installé avec succès."
-echo ""
-echo "#####################################################################################"
-echo ""
-}
-
 installer_brew () {
 echo 8. "Installation de Brew"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -100,10 +95,12 @@ echo "✅ Brew installé avec succès."
 
 # Applications à installer
 APPS_BREW=(
-    "smartmontools"
-    "mc"
-    "lm-sensors"
-    "cosign"
+    # "smartmontools"   # pas dispo en standalone, dispo en distrobox fedora
+    # "mc"              # pas dispo en standalone, dispo en distrobox fedora
+    # "lm-sensors"      # pas dispo en standalone, dispo en distrobox fedora
+    "cosign"            # pas dispo en standalone, pas dispo en distrobox fedora
+    # "distrobox"       # dispo en standalone
+    # "llama.cpp"       # dispo en standalone, pas en distrobox fedora (uniquement version non vulkan, qui tire 2go de dépendances)
 )    
 brew install "${APPS_BREW[@]}"
 
@@ -115,30 +112,8 @@ echo "##########################################################################
 echo ""
 }
 
-installer_AIB () {
-echo "9. Installation de Atomic Image Builder (pas dispo en rpm pour distrobox)"
-mkdir -p ~/.local/bin
-curl -fsSL https://raw.githubusercontent.com/Danathar/atomic-image-builder/main/contrib/aib -o ~/.local/bin/aib
-chmod +x ~/.local/bin/aib
-echo "✅ atomic image builder installé avec succès."
-echo ""
-echo "#####################################################################################"
-echo ""
-}
-
-installer_llama () {
-echo "6. Installation de llama depuis Github (version vulkan pas dispo en rpm pour distrobox)"
-curl -LsSf https://llama.app/install.sh | sh
-echo "✅ llama installé avec succès."
-echo ""
-echo "#####################################################################################"
-echo ""
-}
-
-echo 10. Installation des flatpaks
-# Nota bene : on banni le mode --user pour les flatpaks. Pour une question de sécurité : installation "systeme" pour que personne (ni un utilisateur, ni un logiciel malveillant) ne puisse altérer les outils de base. En installation mode --user, un logiciel malveillant n'a besoin d'aucun privilège particulier pour alterer le contenu d'un flatpak. De plus, l'installation en mode --user n'isole pas plus les flatpaks. En mode système, il sont dans /var/lib, et donc deja en dehors des fichiers de l'OS (aucune pollution).
-# Pour l'instant, installation automatique de l'éditeur de texte, Bazaar et Suchi (preview Nautilus) uniquement.
 installer_flatpaks() {
+  echo 10. Installation des flatpaks
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
   BASE_FLATPAKS=(
@@ -160,6 +135,84 @@ installer_flatpaks() {
 
   echo "Nettoyage des résidus éventuels"
   flatpak uninstall --unused
+}
+
+installer_llama () {
+  echo "6. Installation de llama depuis Github (version vulkan pas dispo en rpm pour distrobox)"
+  curl -LsSf https://llama.app/install.sh | sh
+  echo "✅ llama installé avec succès."
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
+
+installer_AIB () {
+  echo "9. Installation de Atomic Image Builder (pas dispo en rpm pour distrobox)"
+  mkdir -p ~/.local/bin
+  curl -fsSL https://raw.githubusercontent.com/Danathar/atomic-image-builder/main/contrib/aib -o ~/.local/bin/aib
+  chmod +x ~/.local/bin/aib
+  echo "✅ atomic image builder installé avec succès."
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
+
+
+installer_distrobox () {
+echo "7. Installation de llama"
+# v1 (default) — latest stable
+curl -fsSL https://raw.githubusercontent.com/89luca89/distrobox/legacy/install | sh
+echo "✅ llama installé avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
+}
+
+creer_distrobox_fedora-tools () {
+BOX_NAME="fedora-tools"
+PACKAGES=(lm_sensors smartmontools mc aria2c)
+# Binaires à exporter vers l'hôte (~/.local/bin par défaut)
+BINARIES=(sensors sensors-detect smartctl smartd mc aria2c)
+
+echo "==> Vérification de distrobox"
+if ! command -v distrobox >/dev/null 2>&1; then
+    echo "distrobox n'est pas installé sur l'hôte. Installe-le d'abord (ex: via rpm-ostree ou brew)." >&2
+    exit 1
+fi
+ 
+echo "==> Création de la distrobox '${BOX_NAME}' (image Fedora)"
+if distrobox list | grep -q "^${BOX_NAME}\b"; then
+    echo "La box '${BOX_NAME}' existe déjà, on continue."
+else
+    distrobox create --name "${BOX_NAME}" --image fedora:latest
+fi
+ 
+echo "==> Installation des paquets dans la box: ${PACKAGES[*]}"
+distrobox enter "${BOX_NAME}" -- sudo dnf install -y "${PACKAGES[@]}"
+ 
+echo "==> Export des binaires vers l'hôte (~/.local/bin)"
+mkdir -p ~/.local/bin
+for bin in "${BINARIES[@]}"; do
+    distrobox enter "${BOX_NAME}" -- distrobox-export --bin "/usr/bin/${bin}" --export-path "${HOME}/.local/bin"
+done
+ 
+echo ""
+echo "==> Terminé."
+echo "Binaires exportés dans ~/.local/bin : ${BINARIES[*]}"
+echo ""
+echo "Notes :"
+echo "  - 'sensors-detect' doit être lancé une première fois pour détecter les capteurs matériels :"
+echo "      sensors-detect"
+echo "  - 'smartd' est un démon ; dans un conteneur il n'est pas géré par systemd hôte."
+echo "    Pour une surveillance continue, préfère lancer 'smartctl' ponctuellement plutôt que le démon."
+echo "  - Vérifie que ~/.local/bin est bien dans ton \$PATH."
+}
+
+telecharger_llm () {
+# avec aria2c :
+# gemma-3-4b-it-Q8_0.gguf
+# Qwen2.5-Coder-3B-Instruct-abliterated-Q4_K_M.gguf
+# Llama-3.2-3B-Instruct-Q4_K_M.gguf
 }
 
 executer_logique "$@"
