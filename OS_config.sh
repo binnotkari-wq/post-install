@@ -18,6 +18,7 @@ executer_logique () {
   desactiver_service
   masquer_autostarts_gnome
   installer_paquets_systeme
+  parametrer_plymouth_amdgpu_vega
   redemarrer
 }
 
@@ -300,6 +301,94 @@ installer_paquets_systeme () {
       sudo rpm-ostree install --idempotent "${TO_INSTALL[@]}"
       REBOOT_NEEDED=1
       echo "✅ Paquets système installés avec succès."
+  fi
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
+
+# Corrige un bug apparu sur les GPU AMD intégrés de la famille Vega (ex: Picasso/Vega 8,
+# présent sur le Dell 5485) suite à une mise à jour majeure de kernel : le splash graphique
+# Plymouth (thème bgrt) ne s'affiche plus au prompt LUKS, remplacé par une invite texte.
+#
+# Cause : un changement upstream de Plymouth ("Don't use simpledrm together with LUKS")
+# nécessite UseSimpledrm=1 dans /etc/plymouth/plymouthd.conf pour retrouver le comportement
+# d'avant. De plus, rpm-ostree initramfs-etc --track= ne régénère PAS réellement l'initramfs
+# en mode générique (--no-hostonly, celui de Silverblue) malgré un statut trompeur qui laisse
+# croire que si (bug dracut confirmé : le module plymouth ignore les overrides /etc hors mode
+# hostonly) — d'où l'inclusion forcée via le flag dracut -I ci-dessous, seule méthode fiable
+# constatée. Voir fix-plymouth-amdgpu.md pour le détail de l'investigation.
+#
+# Ce correctif n'a de sens que sur du matériel AMD Vega intégré : il est donc gardé par une
+# question interactive plutôt qu'appliqué systématiquement (ex: le PC gaming en Radeon 6600XT,
+# ou le X240 en Intel, n'ont pas ce bug et n'ont pas besoin de ce fichier dracut).
+parametrer_plymouth_amdgpu_vega () {
+  echo "==> Correctif Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8)"
+
+  local reponse
+  read -r -p "  Cette machine a-t-elle un GPU AMD Vega intégré (ex: Dell 5485) ? [o/N] " reponse
+  case "${reponse,,}" in
+    o|oui|y|yes) ;;
+    *)
+      echo "  ↳ Ignoré (pas concerné par ce correctif)."
+      echo ""
+      echo "#####################################################################################"
+      echo ""
+      return 0
+      ;;
+  esac
+
+  local DRACUT_CONF="/etc/dracut.conf.d/amdgpu-early.conf"
+  local PLYMOUTH_CONF="/etc/plymouth/plymouthd.conf"
+  local besoin_regen=0
+
+  # Fichier dracut : force le chargement précoce du driver amdgpu dans l'initramfs
+  if ! sudo grep -qE 'force_drivers\+?=.*amdgpu' "${DRACUT_CONF}" 2>/dev/null; then
+      backup_fichier "${DRACUT_CONF}" sudo
+      echo 'force_drivers+=" amdgpu "' | sudo tee "${DRACUT_CONF}" >/dev/null
+      besoin_regen=1
+      echo "  ↳ ${DRACUT_CONF} créé/mis à jour."
+  else
+      echo "  ↳ ${DRACUT_CONF} déjà en place."
+  fi
+
+  # Config Plymouth : thème bgrt + UseSimpledrm=1 (valeur numérique, pas "true")
+  if sudo test -f "${PLYMOUTH_CONF}"; then
+      backup_fichier "${PLYMOUTH_CONF}" sudo
+  fi
+  if ! sudo grep -qE '^\[Daemon\]' "${PLYMOUTH_CONF}" 2>/dev/null \
+     || ! sudo grep -qE '^Theme=bgrt' "${PLYMOUTH_CONF}" 2>/dev/null \
+     || ! sudo grep -qE '^UseSimpledrm=1' "${PLYMOUTH_CONF}" 2>/dev/null; then
+cat <<'EOF' | sudo tee "${PLYMOUTH_CONF}" >/dev/null
+[Daemon]
+Theme=bgrt
+UseSimpledrm=1
+EOF
+      besoin_regen=1
+      echo "  ↳ ${PLYMOUTH_CONF} créé/mis à jour."
+  else
+      echo "  ↳ ${PLYMOUTH_CONF} déjà en place."
+  fi
+
+  if ((besoin_regen)); then
+      # rpm-ostree initramfs-etc --track= ne régénère pas fiablement en mode générique :
+      # on untrack au cas où un tracking résiduel existerait, puis on force l'inclusion
+      # via dracut -I (seule méthode confirmée fonctionnelle, cf. message d'erreur
+      # "initramfs regeneration and /etc overlay not compatible; use dracut arg -I instead").
+      for f in "${DRACUT_CONF}" "${PLYMOUTH_CONF}"; do
+          if rpm-ostree status | grep -q "${f}"; then
+              sudo rpm-ostree initramfs-etc --untrack="${f}" 2>/dev/null || true
+          fi
+      done
+      sudo rpm-ostree cancel 2>/dev/null || true
+      sudo rpm-ostree initramfs --enable \
+          --arg=-I --arg="${DRACUT_CONF}" \
+          --arg=-I --arg="${PLYMOUTH_CONF}"
+      REBOOT_NEEDED=1
+      echo "✅ Correctif Plymouth/amdgpu appliqué (nouveau déploiement, reboot nécessaire)."
+      echo "  ↳ Vérification post-reboot : lsinitrd -f etc/plymouth/plymouthd.conf /boot/ostree/*/initramfs-\$(uname -r).img"
+  else
+      echo "✅ Correctif déjà en place, aucune régénération nécessaire."
   fi
   echo ""
   echo "#####################################################################################"
