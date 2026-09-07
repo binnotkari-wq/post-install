@@ -287,7 +287,7 @@ Hidden=true" > ~/.config/autostart/"$app"
 
 installer_paquets_systeme () {
   echo "==> Layering rpm-ostree (paquets hardware/GUI)"
-  NEEDED_PKGS=(gamescope zenity)
+  NEEDED_PKGS=(gamescope zenity gnome-shell-extension-dash-to-panel)
   TO_INSTALL=()
   for pkg in "${NEEDED_PKGS[@]}"; do
       if ! rpm -q --quiet "$pkg"; then
