@@ -266,7 +266,7 @@ C'est l'étape qui a motivé, en creux, tout le travail de neutralisation des mi
 echo "ntsync" | sudo tee /etc/modules-load.d/ntsync.conf
 ```
 
-**Point d'attention retenu** : le fichier doit être écrit sous `/etc/modules-load.d/`, et non `/usr/lib/modules-load.d/` — ce second chemin fait partie de l'arbre ostree en lecture seule sur une image atomique, toute tentative d'écriture y échoue.
+**Point d'attention retenu** : sur un OS déjà installé, le fichier doit être écrit sous `/etc/modules-load.d/`, et non `/usr/lib/modules-load.d/` — ce second chemin fait partie de l'arbre ostree en lecture seule sur une image atomique, toute tentative d'écriture y échoue.
 
 ### 4.6. Paramétrage de la ZRAM
 
