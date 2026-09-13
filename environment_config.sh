@@ -245,12 +245,14 @@ dialog
 duf
 fd-find
 fzf
+git # afin qu'il soit dispo pour les autres outils de la distrobox
 glow
 isomd5sum
 just
 kiwix-tools
 libva-utils
 lm_sensors
+man2html
 mc
 msedit
 powertop
@@ -308,6 +310,7 @@ vppscaling_n_out_usrptr
 vppsharpness
 sensors
 sensors-detect
+man2html
 mc
 msedit
 powertop
