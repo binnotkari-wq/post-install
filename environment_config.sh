@@ -255,6 +255,7 @@ lm_sensors
 man2html
 mc
 msedit
+pandoc
 powertop
 s-tui
 ShellCheck
@@ -313,6 +314,8 @@ sensors-detect
 man2html
 mc
 msedit
+pandoc
+pandoc-server
 powertop
 s-tui
 shellcheck
