@@ -248,6 +248,7 @@ fzf
 git # afin qu'il soit dispo pour les autres outils de la distrobox
 glow
 isomd5sum
+jq
 just
 kiwix-tools
 libva-utils
@@ -280,6 +281,7 @@ fzf
 glow
 checkisomd5
 implantisomd5
+jq
 just
 kiwix-manage
 kiwix-search
@@ -315,7 +317,6 @@ man2html
 mc
 msedit
 pandoc
-pandoc-server
 powertop
 s-tui
 shellcheck
