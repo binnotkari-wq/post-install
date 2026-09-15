@@ -256,6 +256,7 @@ lm_sensors
 man2html
 mc
 msedit
+ostree
 pandoc
 powertop
 s-tui
