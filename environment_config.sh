@@ -261,6 +261,7 @@ pandoc
 powertop
 s-tui
 ShellCheck
+shfmt
 smartmontools
 stress-ng
 tldr
@@ -320,6 +321,7 @@ msedit
 pandoc
 powertop
 s-tui
+shfmt
 shellcheck
 smartctl
 smartd
