@@ -92,7 +92,7 @@ Fonction : `installer_brew`
 2. Ajoute le chemin Homebrew au `secure_path` de `/etc/sudoers`, uniquement s'il n'y figure pas déjà.
 3. Ajoute la ligne `eval "$(brew shellenv bash)"` à `~/.bashrc`, une seule fois.
 4. Réordonne le `PATH` de la session courante pour que les binaires système (`/usr/bin`, `/bin`, etc.) restent prioritaires sur ceux de Homebrew — évite qu'un paquet Homebrew masque un équivalent système attendu par d'autres scripts.
-5. Installe les paquets listés dans `APPS_BREW` (actuellement `cosign` seul — les autres candidats sont documentés en commentaire avec la raison de leur exclusion : disponibles autrement, en standalone ou en distrobox Fedora).
+5. Installe les paquets listés dans `APPS_BREW` (actuellement `just` et `cosign` seuls — les autres candidats sont documentés en commentaire avec la raison de leur exclusion : disponibles autrement, en standalone ou en distrobox Fedora).
 
 ## 6. Flatpaks
 
