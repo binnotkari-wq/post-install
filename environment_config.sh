@@ -284,7 +284,6 @@ glow
 checkisomd5
 implantisomd5
 jq
-just
 kiwix-manage
 kiwix-search
 kiwix-serve
