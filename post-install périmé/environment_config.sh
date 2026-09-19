@@ -57,6 +57,13 @@ executer_logique () {
 mettre_en_place_preferences
 mettre_en_place_alias
 mettre_en_place_repo_github
+installer_brew
+installer_flatpaks
+installer_llama
+installer_AIB
+installer_distrobox
+creer_distrobox_fedora-tools
+telecharger_llm
 }
 
 mettre_en_place_preferences () {
@@ -117,6 +124,47 @@ echo "##########################################################################
 echo ""
 }
 
+installer_brew () {
+echo "4. Installation de Brew"
+if ! command -v brew >/dev/null 2>&1 && [[ ! -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+else
+    echo "Brew déjà installé, étape sautée."
+fi
+
+# Ajout de linuxbrew au secure_path de sudo, uniquement s'il n'y est pas déjà
+if ! sudo grep -q "linuxbrew" /etc/sudoers; then
+    sauvegarder_fichier /etc/sudoers oui
+    sudo sed -Ei "s#secure_path = (.*)#secure_path = \1:/home/linuxbrew/.linuxbrew/bin#" /etc/sudoers
+fi
+
+# Ajout du path dans .bashrc, une seule fois
+ajouter_ligne_si_absente 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' "$HOME/.bashrc"
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+# Repriorisation du PATH système natif pour éviter la concurrence avec le path de homebrew
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
+echo "✅ Brew installé avec succès."
+
+# Applications à installer
+APPS_BREW=(
+    # "smartmontools"   # pas dispo en standalone, dispo en distrobox fedora
+    # "mc"              # pas dispo en standalone, dispo en distrobox fedora
+    # "lm-sensors"      # pas dispo en standalone, dispo en distrobox fedora
+    "cosign"            # pas dispo en standalone, pas dispo en distrobox fedora
+    # "distrobox"       # dispo en standalone
+    # "llama.cpp"       # dispo en standalone, pas en distrobox fedora (uniquement version non vulkan, qui tire 2go de dépendances)
+)
+brew install "${APPS_BREW[@]}"
+
+brew cleanup
+
+echo "✅ Brew (et applications brew) installé avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
+}
+
 installer_flatpaks() {
   echo "5. Installation des flatpaks"
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -145,6 +193,182 @@ installer_flatpaks() {
   echo ""
   echo "#####################################################################################"
   echo ""
+}
+
+installer_llama () {
+  echo "6. Installation de llama depuis Github (version vulkan pas dispo en rpm pour distrobox)"
+  if ! command -v llama-cli >/dev/null 2>&1; then
+      curl -LsSf https://llama.app/install.sh | sh
+  else
+      echo "llama déjà installé, étape sautée."
+  fi
+  echo "✅ llama installé avec succès."
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
+
+installer_AIB () {
+  echo "7. Installation de Atomic Image Builder (pas dispo en rpm pour distrobox)"
+  mkdir -p ~/.local/bin
+  sauvegarder_fichier ~/.local/bin/aib non
+  curl -fsSL https://raw.githubusercontent.com/Danathar/atomic-image-builder/main/contrib/aib -o ~/.local/bin/aib
+  chmod +x ~/.local/bin/aib
+  echo "✅ atomic image builder installé avec succès."
+  echo ""
+  echo "#####################################################################################"
+  echo ""
+}
+
+installer_distrobox () {
+echo "8. Installation de distrobox"
+if ! command -v distrobox >/dev/null 2>&1; then
+    curl -fsSL https://raw.githubusercontent.com/89luca89/distrobox/legacy/install | sh
+else
+    echo "distrobox déjà installé, étape sautée."
+fi
+echo "✅ distrobox installé avec succès."
+echo ""
+echo "#####################################################################################"
+echo ""
+}
+
+creer_distrobox_fedora-tools () {
+echo "9. Création de la distrobox fedora-tools"
+BOX_NAME="fedora-tools"
+PACKAGES=(
+aria2
+bat
+btop
+createrepo_c
+dialog
+duf
+fd-find
+fzf
+git # afin qu'il soit dispo pour les autres outils de la distrobox
+glow
+isomd5sum
+jq
+just
+kiwix-tools
+libva-utils
+lm_sensors
+man2html
+mc
+msedit
+ostree
+pandoc
+powertop
+s-tui
+ShellCheck
+shfmt
+smartmontools
+stress-ng
+tldr
+tmux
+yt-dlp
+zoxide
+)
+
+# Binaires à exporter vers l'hôte (~/.local/bin par défaut)
+BINARIES=(
+aria2c
+bat
+btop
+createrepo_c
+dialog
+duf
+fd
+fzf
+glow
+checkisomd5
+implantisomd5
+jq
+kiwix-manage
+kiwix-search
+kiwix-serve
+av1encode
+avcenc
+avcstreamoutdemo
+h264encode
+hevcencode
+jpegenc
+loadjpeg
+mpeg2vaenc
+mpeg2vldemo
+putsurface
+putsurface_wayland
+sfcsample
+vacopy
+vainfo
+vavpp
+vp8enc
+vp9enc
+vpp3dlut
+vppblending
+vppchromasitting
+vppdenoise
+vpphdr_tm
+vppscaling_csc
+vppscaling_n_out_usrptr
+vppsharpness
+sensors
+sensors-detect
+man2html
+mc
+msedit
+pandoc
+powertop
+s-tui
+shfmt
+shellcheck
+smartctl
+smartd
+stress-ng
+tldr
+tmux
+yt-dlp
+zoxide
+)
+
+echo "==> Vérification de distrobox"
+if ! command -v distrobox >/dev/null 2>&1; then
+    echo "distrobox n'est pas installé sur l'hôte. Installe-le d'abord (ex: via rpm-ostree ou brew)." >&2
+    exit 1
+fi
+
+echo "==> Création de la distrobox '${BOX_NAME}' (image Fedora)"
+if distrobox list | grep -q "^${BOX_NAME}\b"; then
+    echo "La box '${BOX_NAME}' existe déjà, on continue."
+else
+    distrobox create --name "${BOX_NAME}" --image fedora:latest
+fi
+
+echo "==> Installation des paquets dans la box: ${PACKAGES[*]}"
+distrobox enter "${BOX_NAME}" -- sudo dnf install -y "${PACKAGES[@]}"
+
+echo "==> Export des binaires vers l'hôte (~/.local/bin)"
+mkdir -p ~/.local/bin
+for bin in "${BINARIES[@]}"; do
+    distrobox enter "${BOX_NAME}" -- distrobox-export --bin "/usr/bin/${bin}" --export-path "${HOME}/.local/bin"
+done
+
+echo "==> Terminé."
+echo "Binaires exportés dans ~/.local/bin : ${BINARIES[*]}"
+echo ""
+echo "#####################################################################################"
+echo ""
+}
+
+telecharger_llm () {
+echo "10. Téléchargement des LLM (non implémenté)"
+# avec aria2c :
+# gemma-3-4b-it-Q8_0.gguf
+# Qwen2.5-Coder-3B-Instruct-abliterated-Q4_K_M.gguf
+# Llama-3.2-3B-Instruct-Q4_K_M.gguf
+:   # no-op : le corps de fonction original était vide -> erreur de syntaxe bash
+    # ("syntax error near unexpected token `}'"), un bloc { } ne peut pas être
+    # totalement vide en bash, même rempli de seuls commentaires.
 }
 
 executer_logique "$@"
