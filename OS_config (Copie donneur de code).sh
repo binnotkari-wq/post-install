@@ -12,7 +12,7 @@ executer_logique () {
   limiter_journaux
   NON : supprimer_flatpak_fedora
   OK : injecter_KARGS_compression_btrfs
-  charger_module_ntsync
+  OK : charger_module_ntsync
   parametrer_zram
   parametrer_memoire_virtuelle
   desactiver_service
