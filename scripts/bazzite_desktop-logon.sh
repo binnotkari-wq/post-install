@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-########################
-# Descriptif du script #
-########################
+# Logon par défaut sur le bureau, grâce au script ujust de Bazzite.
+
+set -euo pipefail
+
+ujust set-default-desktop 
 
