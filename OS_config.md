@@ -260,7 +260,7 @@ C'est l'étape qui a motivé, en creux, tout le travail de neutralisation des mi
 
 ### 4.5. Module noyau NTSYNC
 
-`ntsync` est un module noyau qui améliore les performances de synchronisation pour les applications Windows exécutées via Wine/Proton — pertinent ici en prévision d'un usage gaming (le PC gaming du parc de Benoit tourne actuellement sous Bazzite/Proton).
+`ntsync` est un module noyau qui améliore les performances de synchronisation pour les applications Windows exécutées via Wine/Proton — pertinent ici en prévision d'un usage gaming (le PC gaming du parc tourne actuellement sous Bazzite/Proton).
 
 ```bash
 echo "ntsync" | sudo tee /etc/modules-load.d/ntsync.conf
