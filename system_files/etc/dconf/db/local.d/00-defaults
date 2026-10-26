@@ -1,5 +1,6 @@
 [org/gnome/desktop/input-sources]
 sources=[('xkb', 'fr+azerty')]
+xkb-options=@as []
 
 [org/gnome/desktop/peripherals/keyboard]
 numlock-state=true
@@ -21,11 +22,14 @@ toggle-tiled-right=['<Super>Right']
 [org/gnome/desktop/interface]
 accent-color='yellow'
 color-scheme='prefer-dark'
+enable-hot-corners=true
+toolkit-accessibility=false
 
 [org/gnome/nautilus/preferences]
-default-folder-viewer='list-view'
-show-create-link=true
 date-time-format='detailed'
+default-folder-viewer='list-view'
+migrated-gtk-settings=true
+show-create-link=true
 
 [org/gnome/nautilus/list-view]
 use-tree-view=true
@@ -52,27 +56,33 @@ keybindings='default'
 style-variant='follow'
 draw-spaces=['space', 'tab', 'newline', 'trailing', 'leading']
 
-
-[org/gnome/Ptyxis]
-default-profile-uuid='4e1019f9ba4276ad9c62d05b6a727dd1'
-font-name='Adwaita Mono 11'
-profile-uuids=['4e1019f9ba4276ad9c62d05b6a727dd1']
-use-system-font=false
-window-size=(uint32 135, uint32 35)
-
 [org/gnome/Ptyxis/Profiles/4e1019f9ba4276ad9c62d05b6a727dd1]
 palette='Gruvbox'
 bold-is-bright=true
 opacity=0.80
 
-
 [org/gnome/shell]
-favorite-apps=['kitty.desktop', 'org.mozilla.firefox.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'org.gnome.TextEditor.desktop', 'org.gnome.Calculator.desktop', 'org.gnome.SystemMonitor.desktop']
+favorite-apps=['kitty.desktop', 'org.mozilla.firefox.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'org.gnome.TextEditor.desktop', 'org.gnome.Calculator.desktop', 'net.nokyan.Resources.desktop', 'org.gnome.SystemMonitor.desktop']
 enabled-extensions=['dash-to-panel@jderose9.github.com']
 disable-user-extensions=false
 
 [org/gnome/shell/extensions/dash-to-panel]
+animate-appicon-hover-animation-extent={'RIPPLE': 4, 'PLANK': 4, 'SIMPLE': 1}
 dot-position='BOTTOM'
-intellihide=true
 hotkeys-overlay-combo='TEMPORARILY'
+intellihide=true
+intellihide-hide-from-windows=true
+panel-anchors='{"IVM-1263454811785":"MIDDLE"}'
+panel-element-positions='{}'
+panel-lengths='{}'
+panel-positions='{"IVM-1263454811785":"LEFT"}'
+panel-sizes='{}'
+prefs-opened=false
 window-preview-title-position='TOP'
+
+[org/gnome/shell/extensions/hotedge]
+fallback-in-use=false
+
+[org/gtk/gtk4/settings/file-chooser]
+show-hidden=true
+sort-directories-first=true
