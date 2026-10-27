@@ -4,9 +4,11 @@ On peut aussi faire un partitionnement personnalisé en ext4 en ayant choisi l'e
 
 Ensuite au premier redémarrage installer le soutils nécessaire à la suite du déploiement
 
-Récupérer :
-just : https://github.com/casey/just/releases/download/1.59.0/just-1.59.0-x86_64-unknown-linux-musl.tar.gz 
-les scripts de configuration : 
+
+
+
+
+
 
 
 
