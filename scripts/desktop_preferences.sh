@@ -66,7 +66,7 @@ copier_fichier "/etc/dconf/db/local.d/00-defaults"        "$src/etc/dconf/db/loc
 copier_fichier "/etc/dconf/profile/user"                  "$src/etc/dconf/profile/user"                  644 oui
 copier_fichier "$HOME/Modèles/Fichier Markdown.md"        "$src/etc/skel/Modèles/Fichier Markdown.md"    644 non
 copier_fichier "$HOME/Modèles/Fichier texte.txt"          "$src/etc/skel/Modèles/Fichier texte.txt"      644 non
-copier_fichier "$HOME/Modèles/Script.sh"                  "$src/etc/skel/Modèles/Script.sh"              755 non
+copier_fichier "$HOME/Modèles/ccript.sh"                  "$src/etc/skel/Modèles/script.sh"              755 non
 
 # Activation des préférences dconf injectées
 sudo dconf update
