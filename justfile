@@ -57,7 +57,6 @@ _confirm recipe:
         {{just_executable()}} {{recipe}}
     fi
 
-
 # --- Paramétrages Ubuntu ---
 
 # Installation outils de base
@@ -74,7 +73,6 @@ delete_snaps:
 [group('Ubuntu')]
 migrate_home_var:
     sudo ./scripts/migrate_home_var.sh
-
 
 # --- Paramétrages Fedora Atomic et dérivés ---
 
@@ -99,6 +97,11 @@ vega_plymouth-fix:
     ./scripts/vega_plymouth-fix.sh
 
 # --- Paramétrages communs ---
+
+# Installation de Firefox et Bazaar.
+[group('Commons')]
+flapak_essentials:
+    ./scripts/flapak_essentials.sh
 
 # Mise à jour des firmwares.
 [group('Commons')]
@@ -154,9 +157,7 @@ atomic:
     {{just_executable()}} _confirm rpmostree-packages
     @echo "Appliquer uniquement lorsque l'affichage graphique de saisie LUKS est KO :"
     {{just_executable()}} _confirm vega_plymouth-fix
-    @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
-    sleep 10
-    sudo systemctl reboot
+    @echo "Réglages appliqués. Redémarrage nécessaire ( sudo systemctl reboot )"
 
 # Applique l'ensemble des réglages spécifiques à Ubuntu. Opérations idempotentes.
 [group('workflows')]
@@ -164,13 +165,12 @@ ubuntu:
     {{just_executable()}} _confirm base_tools
     {{just_executable()}} _confirm delete_snaps
     {{just_executable()}} _confirm migrate_home_var
-    @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
-    sleep 10
-    sudo systemctl reboot
+    @echo "Réglages appliqués. Redémarrage nécessaire ( sudo systemctl reboot )"
 
 # Applique l'ensemble des réglages communs. Opérations idempotentes.
 [group('workflows')]
 commons:
+    {{just_executable()}} _confirm flapak_essentials
     {{just_executable()}} _confirm firmwares-update
     {{just_executable()}} _confirm desktop_preferences
     {{just_executable()}} _confirm shell_alias
@@ -180,6 +180,4 @@ commons:
     {{just_executable()}} _confirm load_ntsync
     {{just_executable()}} _confirm vm-settings
     {{just_executable()}} _confirm zram-settings
-    @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
-    sleep 10
-    sudo systemctl reboot
+    @echo "Réglages appliqués. Redémarrage nécessaire ( sudo systemctl reboot )"

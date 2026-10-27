@@ -40,6 +40,8 @@ ajouter_ligne_si_absente () {
 
 ajouter_ligne_si_absente "alias bh='$HOME/Git/scripts/bash-history-export.sh'" "$HOME/.bashrc"
 ajouter_ligne_si_absente "alias gs='$HOME/Git/scripts/git-sync.sh'" "$HOME/.bashrc"
+ajouter_ligne_si_absente "alias +x='chmod +x *.sh'" "$HOME/.bashrc"
+
 # alias gemma='llama-cli --model "/cargo/local_cache/LLM/gemma-3-4b-it-Q8_0.gguf" --conversation --system-prompt "Tu es un assistant compréhensif pour la vie quotidienne : ménage, jardin, travaux, mécanique." --no-mmap --ctx-size 4096'
 # alias qwen='llama-cli --model "/cargo/local_cache/LLM/Qwen2.5-Coder-3B-Instruct-abliterated-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant concis en ingénierie des systèmes linux, scripting, développement." --no-mmap --ctx-size 4096'
 # alias llama='llama-cli --model "/cargo/local_cache/LLM/Llama-3.2-3B-Instruct-Q4_K_M.gguf" --conversation --system-prompt "Tu es un assistant personnel pour aider à explorer de nouveaux concepts." --no-mmap --ctx-size 4096'
