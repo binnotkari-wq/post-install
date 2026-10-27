@@ -26,17 +26,22 @@ fi
 # ── Suppression des snaps ─────────────────────────────────────────────
 header "Suppression des snaps et du framework snap"
 
+# Stopper le daemon
 systemctl stop snapd
 systemctl disable snapd
 
-MAX_ITER=100; iter=0
-while snap list 2>/dev/null | awk 'NR>1{print $1}' | grep -q .; do
-    snap list 2>/dev/null | awk 'NR>1{print $1}' | while read -r s; do
+# Supprimer tous les snaps sauf snapd lui-même
+MAX_ITER=10; iter=0
+while snap list 2>/dev/null | awk 'NR>1 && $1!="snapd" {print $1}' | grep -q .; do
+    snap list 2>/dev/null | awk 'NR>1 && $1!="snapd" {print $1}' | while read -r s; do
         snap remove --purge "$s" || warn "Impossible de supprimer : $s"
     done
     (( iter++ ))
     (( iter >= MAX_ITER )) && die "Boucle bloquée après $MAX_ITER itérations."
 done
+
+# Supprimer snapd en dernier
+snap remove --purge snapd 2>/dev/null || true
 
 systemctl mask snapd
 apt purge snapd -y
