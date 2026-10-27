@@ -1,19 +1,23 @@
 # post-install
 
-Kit de post installation, mise en place environnement pour Fedora Atomic et dérivés. Aucune donnée personnelle.
+Kit de post installation, configuration OS et environnement pour Ubuntu et distributions basées sur Fedora Atomic. Aucune donnée personnelle.
 
-## Configuration OS
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/OS_config.sh -o OS_config.sh
-chmod +x OS_config.sh
-bash ./OS_config.sh
-```
-
-## Configuration environnement
+## Exécution
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/binnotkari-wq/post-install/main/environment_config.sh -o environment_config.sh
-chmod +x environment_config.sh
-bash ./environment_config.sh
+curl -fsSL https://github.com/binnotkari-wq/post-install/archive/refs/heads/main.zip -o /tmp/post-install.zip && \
+unzip -q /tmp/post-install.zip -d /tmp/ && \
+mv /tmp/post-install-main /tmp/post-install && \
+curl -fsSL https://github.com/casey/just/releases/download/1.59.0/just-1.59.0-x86_64-unknown-linux-musl.tar.gz | tar -xz -C /tmp/post-install just && \
+cd /tmp/post-install && ./just
 ```
+
+Actions de ces commandes : 
+
+- Télécharge l’archive zip de ce repo dans /tmp/
+- La décompresse dans /tmp/post-install-main/
+- Renomme en /tmp/post-install/
+- Télécharge et décompresse l’archive de just, en extrayant uniquement l’exécutable just directement dans /tmp/post-install/
+- Se place dans le dossier et lance ./just
+
+Le just extrait dans le même dossier que le justfile suffit, pas besoin de l’installer dans le PATH.
