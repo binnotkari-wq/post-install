@@ -63,17 +63,17 @@ _confirm recipe:
 # Installation outils de base
 [group('Ubuntu')]
 base_tools:
-    sudo apt install just git distrobox curl compsize
+    ./scripts/base_tools.sh
 
 # Suppression Snaps
 [group('Ubuntu')]
 delete_snaps:
-    sudo ./delete_snaps.sh
+    sudo ./scripts/delete_snaps.sh
 
 # Déplacement /home et /var vers partition btrfs
 [group('Ubuntu')]
 migrate_home_var:
-    sudo ./migrate_home_var.sh
+    sudo ./scripts/migrate_home_var.sh
 
 
 # --- Paramétrages Fedora Atomic et dérivés ---
