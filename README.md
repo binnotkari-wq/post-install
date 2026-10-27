@@ -5,10 +5,10 @@ Kit de post installation, configuration OS et environnement pour Ubuntu et distr
 ## Exécution
 
 ```bash
-curl -fsSL https://github.com/binnotkari-wq/post-install/archive/refs/heads/main.zip -o /tmp/post-install.zip && \
+wget -qO /tmp/post-install.zip https://github.com/binnotkari-wq/post-install/archive/refs/heads/main.zip && \
 unzip -q /tmp/post-install.zip -d /tmp/ && \
 mv /tmp/post-install-main /tmp/post-install && \
-curl -fsSL https://github.com/casey/just/releases/download/1.59.0/just-1.59.0-x86_64-unknown-linux-musl.tar.gz | tar -xz -C /tmp/post-install just && \
+wget -qO- https://github.com/casey/just/releases/download/1.59.0/just-1.59.0-x86_64-unknown-linux-musl.tar.gz | tar -xz -C /tmp/post-install just && \
 cd /tmp/post-install && ./just
 ```
 
