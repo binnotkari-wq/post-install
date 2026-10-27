@@ -30,18 +30,12 @@ header "Suppression des snaps et du framework snap"
 systemctl stop snapd
 systemctl disable snapd
 
-# Supprimer tous les snaps sauf snapd lui-même
-MAX_ITER=10; iter=0
-while snap list 2>/dev/null | awk 'NR>1 && $1!="snapd" {print $1}' | grep -q .; do
-    snap list 2>/dev/null | awk 'NR>1 && $1!="snapd" {print $1}' | while read -r s; do
-        snap remove --purge "$s" || warn "Impossible de supprimer : $s"
+# Execution de la boucle de suppression jusqu'à ce qu'il ne reste plus aucun snap
+while [ "$(snap list | wc -l)" -gt 0 ]; do
+    for snap in $(snap list | tail -n +2 | cut -d ' ' -f 1); do
+        snap remove --purge "$snap" 2> /dev/null
     done
-    (( iter++ ))
-    (( iter >= MAX_ITER )) && die "Boucle bloquée après $MAX_ITER itérations."
 done
-
-# Supprimer snapd en dernier
-snap remove --purge snapd 2>/dev/null || true
 
 systemctl mask snapd
 apt purge snapd -y
