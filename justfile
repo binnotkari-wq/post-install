@@ -101,47 +101,47 @@ vega_plymouth-fix:
 # --- Paramétrages communs ---
 
 # Mise à jour des firmwares.
-[group('Communs')]
+[group('Commons')]
 firmwares-update:
     ./scripts/firmwares-update.sh
 
 # Applique les préférences desktop Gnome.
-[group('Communs')]
+[group('Commons')]
 desktop_preferences:
     ./scripts/desktop_preferences.sh
 
 # Application des alias shell.
-[group('Communs')]
+[group('Commons')]
 shell_alias:
     ./scripts/shell_alias.sh
 
 # Mise en place des repos Github personnels (demande des credentials pour le repo privé).
-[group('Communs')]
+[group('Commons')]
 github_setup:
     ./scripts/github_setup.sh
 
 # Limitation de l'espace disque alloué aux journaux système (100 Mo).
-[group('Communs')]
+[group('Commons')]
 log_limit:
     ./scripts/log_limit.sh
 
 # Desactivation des services et démarrages automatiques.
-[group('Communs')]
+[group('Commons')]
 disable_startups:
     ./scripts/disable_startups.sh
 
 # Chargement du module NTSYNC au démarrage.
-[group('Communs')]
+[group('Commons')]
 load_ntsync:
     ./scripts/load_ntsync.sh
 
 # Paramétrage de la mémoire virtuelle.
-[group('Communs')]
+[group('Commons')]
 vm-settings:
     ./scripts/vm-settings.sh
 
 # Paramétrage de la ZRAM.
-[group('Communs')]
+[group('Commons')]
 zram-settings:
     sudo ./scripts/zram-settings.sh
 
@@ -170,7 +170,7 @@ ubuntu:
 
 # Applique l'ensemble des réglages communs. Opérations idempotentes.
 [group('workflows')]
-communs:
+commons:
     {{just_executable()}} _confirm firmwares-update
     {{just_executable()}} _confirm desktop_preferences
     {{just_executable()}} _confirm shell_alias
