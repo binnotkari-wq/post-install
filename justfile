@@ -8,7 +8,7 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 
 # Affiche la liste des recettes disponibles
 _default:
-    @just --list --list-heading $'Application des reglages systeme\n'
+    @{{just_executable()}} --list --list-heading $'Application des reglages systeme\n'
 
 # Menu interactif groupé par catégories
 _menu:
@@ -36,7 +36,7 @@ _menu:
             # Nettoie les espaces pour récuperer le nom exact de la recette
             recipe=$(echo {} | xargs);
             if [ -n "$recipe" ] && ! echo "{}" | grep -q "══"; then
-                just --show "$recipe" 2>/dev/null || echo "Aperçu indisponible"
+                {{just_executable()}} --show "$recipe" 2>/dev/null || echo "Aperçu indisponible"
             fi
         ' \
         --preview-window=right:50%:wrap)
@@ -46,7 +46,7 @@ _menu:
 
     # 3. Exécution si ce n'est pas une ligne d'en-tête de catégorie
     if [ -n "$RECIPE" ] && ! echo "$SELECTION" | grep -q "══"; then
-        just "$RECIPE"
+        {{just_executable()}} "$RECIPE"
     fi
 
 # Confirmations d'éxecution d'une recette.
@@ -54,7 +54,7 @@ _confirm recipe:
     #!/usr/bin/env bash
     read -p "Exécuter '{{recipe}}' ? [y/N] " reply
     if [[ "$reply" =~ ^[Yy]$ ]]; then
-        just {{recipe}}
+        {{just_executable()}} {{recipe}}
     fi
 
 
@@ -148,12 +148,12 @@ zram-settings:
 # Applique l'ensemble des réglages spécifiques aux distribution type Atomic. Opérations idempotentes.
 [group('workflows')]
 atomic:
-    just _confirm existing-files_compress
-    just _confirm btrfs-kargs
+    {{just_executable()}} _confirm existing-files_compress
+    {{just_executable()}} _confirm btrfs-kargs
     @echo "Une connection réseau est nécessaire pour cette étape (installation de paquets)."
-    just _confirm rpmostree-packages
+    {{just_executable()}} _confirm rpmostree-packages
     @echo "Appliquer uniquement lorsque l'affichage graphique de saisie LUKS est KO :"
-    just _confirm vega_plymouth-fix
+    {{just_executable()}} _confirm vega_plymouth-fix
     @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
     sleep 10
     sudo systemctl reboot
@@ -161,9 +161,9 @@ atomic:
 # Applique l'ensemble des réglages spécifiques à Ubuntu. Opérations idempotentes.
 [group('workflows')]
 ubuntu:
-    just _confirm base_tools
-    just _confirm delete_snaps
-    just _confirm migrate_home_var
+    {{just_executable()}} _confirm base_tools
+    {{just_executable()}} _confirm delete_snaps
+    {{just_executable()}} _confirm migrate_home_var
     @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
     sleep 10
     sudo systemctl reboot
@@ -171,15 +171,15 @@ ubuntu:
 # Applique l'ensemble des réglages communs. Opérations idempotentes.
 [group('workflows')]
 communs:
-    just _confirm firmwares-update
-    just _confirm desktop_preferences
-    just _confirm shell_alias
-    just _confirm github_setup
-    just _confirm log_limit
-    just _confirm disable_startups
-    just _confirm load_ntsync
-    just _confirm vm-settings
-    just _confirm zram-settings
+    {{just_executable()}} _confirm firmwares-update
+    {{just_executable()}} _confirm desktop_preferences
+    {{just_executable()}} _confirm shell_alias
+    {{just_executable()}} _confirm github_setup
+    {{just_executable()}} _confirm log_limit
+    {{just_executable()}} _confirm disable_startups
+    {{just_executable()}} _confirm load_ntsync
+    {{just_executable()}} _confirm vm-settings
+    {{just_executable()}} _confirm zram-settings
     @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
     sleep 10
     sudo systemctl reboot
