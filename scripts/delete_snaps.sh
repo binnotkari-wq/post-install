@@ -30,11 +30,31 @@ header "Suppression des snaps et du framework snap"
 systemctl stop snapd
 systemctl disable snapd
 
-# Execution de la boucle de suppression jusqu'à ce qu'il ne reste plus aucun snap
-while [ "$(snap list | wc -l)" -gt 0 ]; do
-    for snap in $(snap list | tail -n +2 | cut -d ' ' -f 1); do
-        snap remove --purge "$snap" 2> /dev/null
-    done
+# Snaps à traiter en dernier, dans l'ordre
+SNAPS_LAST=(gtk-common-themes bare core24 snapd)
+
+# Supprimer tous les snaps ordinaires
+MAX_ITER=10; iter=0
+while snap list 2>/dev/null \
+    | awk 'NR>1{print $1}' \
+    | grep -qvF "$(printf '%s\n' "${SNAPS_LAST[@]}")" ; do
+
+    snap list 2>/dev/null \
+        | awk 'NR>1{print $1}' \
+        | grep -vF "$(printf '%s\n' "${SNAPS_LAST[@]}")" \
+        | while read -r s; do
+            snap remove --purge "$s" || warn "Impossible de supprimer : $s"
+          done || true
+
+    (( iter++ )) || true
+    (( iter >= MAX_ITER )) && die "Boucle bloquée après $MAX_ITER itérations."
+done
+
+# Supprimer les snaps système dans l'ordre
+for s in "${SNAPS_LAST[@]}"; do
+    snap list 2>/dev/null | awk 'NR>1{print $1}' | grep -qx "$s" \
+        && snap remove --purge "$s" \
+        || true
 done
 
 systemctl mask snapd
