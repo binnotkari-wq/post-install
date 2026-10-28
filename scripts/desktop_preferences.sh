@@ -51,8 +51,6 @@ sudo mkdir -p /etc/firefox/policies
 sudo mkdir -p /etc/profile.d
 sudo mkdir -p /etc/profile.d/local.d
 sudo mkdir -p /etc/profile.d/profile
-sudo mkdir -p /etc/dconf/db/local.d
-sudo mkdir -p /etc/dconf/profile
 mkdir -p "$HOME/Modèles"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -62,14 +60,17 @@ copier_fichier "/var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_
                "$src/etc/firefox/policies/policies.json"             644 oui
 copier_fichier "/etc/firefox/policies/policies.json"      "$src/etc/firefox/policies/policies.json"      644 oui
 copier_fichier "/etc/profile.d/10-environment.sh"         "$src/etc/profile.d/10-environment.sh"         644 oui
-copier_fichier "/etc/dconf/db/local.d/00-defaults"        "$src/etc/dconf/db/local.d/00-defaults"        644 oui
-copier_fichier "/etc/dconf/profile/user"                  "$src/etc/dconf/profile/user"                  644 oui
 copier_fichier "$HOME/Modèles/Fichier Markdown.md"        "$src/etc/skel/Modèles/Fichier Markdown.md"    644 non
 copier_fichier "$HOME/Modèles/Fichier texte.txt"          "$src/etc/skel/Modèles/Fichier texte.txt"      644 non
 copier_fichier "$HOME/Modèles/script.sh"                  "$src/etc/skel/Modèles/script.sh"              755 non
 
+# Spécifique préférences gnome
+# sudo mkdir -p /etc/dconf/db/local.d
+# sudo mkdir -p /etc/dconf/profile
+# copier_fichier "/etc/dconf/db/local.d/00-defaults"        "$src/etc/dconf/db/local.d/00-defaults"        644 oui
+# copier_fichier "/etc/dconf/profile/user"                  "$src/etc/dconf/profile/user"                  644 oui
 # Activation des préférences dconf injectées
-sudo dconf update
+# sudo dconf update
 
 # Ajouter les extragroups
 # - user : extraGroups = [ "libvirtd" "kvm" ];
