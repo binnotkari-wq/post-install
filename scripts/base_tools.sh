@@ -19,5 +19,6 @@ err()     { echo -e "${RED}[ERROR]${RESET} $*" >&2; }
 
 # ─── Execution ──────────────────────────────────────────────────────
 header "Installation des outils de base"
-sudo apt install just git distrobox curl btrfs-compsize btrfs-progs flatpak
+sudo apt install just git curl btrfs-compsize btrfs-progs
+sudo apt install distrobox flatpak
 ok "✅ Outils de base installés avec succès."
