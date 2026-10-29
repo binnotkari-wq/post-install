@@ -113,6 +113,11 @@ firmwares-update:
 desktop_preferences:
     ./scripts/desktop_preferences.sh
 
+# Installation des extensions Gnome.
+[group('Commons')]
+gnome-extensions:
+    ./scripts/gnome-extensions.sh
+
 # Application des alias shell.
 [group('Commons')]
 shell_alias:
@@ -173,6 +178,7 @@ commons:
     {{just_executable()}} _confirm flapak_essentials
     {{just_executable()}} _confirm firmwares-update
     {{just_executable()}} _confirm desktop_preferences
+    {{just_executable()}} _confirm gnome-extensions
     {{just_executable()}} _confirm shell_alias
     {{just_executable()}} _confirm github_setup
     {{just_executable()}} _confirm log_limit

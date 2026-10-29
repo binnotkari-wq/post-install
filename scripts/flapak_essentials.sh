@@ -20,8 +20,12 @@ err()     { echo -e "${RED}[ERROR]${RESET} $*" >&2; }
 # ─── Execution ──────────────────────────────────────────────────────
 header "Installation des applications Flatpak essentielles"
 
+# Si distribution de type Debian / Ubuntu, on installe flatpak. Sur Fedora et dérivés, il est préinstallé.
+if command -v apt &>/dev/null; then
+    sudo apt install flatpak
+fi
+
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install flathub org.mozilla.firefox
 flatpak install flathub io.github.kolunmi.Bazaar
 
-ok "✅ Applications Flatpaks essentielles installés avec succès."
+ok "✅ Framework et store Flatpak installés avec succès."
